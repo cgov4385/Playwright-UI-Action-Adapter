@@ -8,11 +8,15 @@ import com.google.gson.JsonParser;
 import ui_adapter.model.Action;
 import ui_adapter.model.ActionResult;
 import ui_adapter.model.Selector;
+import ui_adapter.agent.service.GeminiVertexLlmClient;
+import ui_adapter.agent.service.GroqLlmClient;
+import ui_adapter.agent.service.LlmClient;
+import ui_adapter.agent.service.LlmUsageLogger;
+import ui_adapter.agent.service.TokenCounter;
 
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -26,22 +30,51 @@ import java.util.concurrent.Executors;
  */
 public class LlmAgent implements TestAgent {
 
-    private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    // Provider selection: groq | gemini-vertex
+    private static final String LLM_PROVIDER = getConfig("LLM_PROVIDER", "gemini-vertex");
+
+    private static final String GROQ_MODEL = getConfig("GROQ_MODEL", "openai/gpt-oss-safeguard-20b");
+
+    private static final String VERTEX_PROJECT = getConfigAny(new String[]{"VERTEX_PROJECT", "GOOGLE_CLOUD_PROJECT"}, "");
+    private static final String VERTEX_LOCATION = getConfigAny(new String[]{"VERTEX_LOCATION", "GOOGLE_CLOUD_LOCATION"}, "us-central1");
+    private static final String GEMINI_MODEL = getConfig("GEMINI_MODEL", "gemini-2.5-flash");
+
     // NOTE: In production, do not hardcode keys. Use environment variables.
-    private static final String API_KEY = getApiKey();
-    private static final String MODEL = "openai/gpt-oss-safeguard-20b"; // Change this string to switch models (e.g., "mixtral-8x7b-32768")
+    private static final String GROQ_API_KEY = getApiKey();
 
     private final String goal;
     private final List<JsonObject> messages;
     private final Gson gson;
     private final Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
     private final HttpClient client;
-    private final ExecutorService executorService; // Manage threads manually to avoid warnings
+    private final ExecutorService executorService;
+    private final LlmClient llmClient;
+
     private boolean isComplete = false;
     private int consecutiveFailures = 0;
     private static final int MAX_CONSECUTIVE_FAILURES = 3;
     private static final boolean LLM_WIRE_LOG_ENABLED = true;
     private static final int LLM_MAX_MESSAGES_TO_LOG = 6;
+    private static final boolean LLM_USAGE_LOG_ENABLED = Boolean.parseBoolean(getConfig("LLM_USAGE_LOG_ENABLED", "true"));
+    private static final String LLM_USAGE_LOG_FILE = getConfig("LLM_USAGE_LOG_FILE", "llm-usage.txt");
+
+    private static String getConfig(String key, String defaultVal) {
+        String v = System.getenv(key);
+        if (v == null || v.isEmpty()) {
+            v = System.getProperty(key);
+        }
+        return (v == null || v.isEmpty()) ? defaultVal : v;
+    }
+
+    private static String getConfigAny(String[] keys, String defaultVal) {
+        for (String k : keys) {
+            String v = getConfig(k, "");
+            if (v != null && !v.isEmpty()) {
+                return v;
+            }
+        }
+        return defaultVal;
+    }
 
     private static String getApiKey() {
         String key = System.getenv("GROQ_API_KEY");
@@ -55,7 +88,6 @@ public class LlmAgent implements TestAgent {
         this.goal = goal;
         this.gson = new Gson();
 
-        // Use a daemon thread executor so the JVM exits promptly
         this.executorService = Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r);
             t.setDaemon(true);
@@ -65,6 +97,8 @@ public class LlmAgent implements TestAgent {
         this.client = HttpClient.newBuilder()
                 .executor(executorService)
                 .build();
+
+        this.llmClient = createClient();
 
         this.messages = new ArrayList<>();
 
@@ -79,6 +113,23 @@ public class LlmAgent implements TestAgent {
         goalMessage.addProperty("role", "user");
         goalMessage.addProperty("content", "GOAL: " + goal);
         this.messages.add(goalMessage);
+    }
+
+    private LlmClient createClient() {
+        String provider = (LLM_PROVIDER == null ? "groq" : LLM_PROVIDER).trim().toLowerCase();
+        switch (provider) {
+            case "gemini":
+            case "gemini-vertex":
+            case "vertex":
+            case "vertex-gemini":
+                if (VERTEX_PROJECT == null || VERTEX_PROJECT.isEmpty()) {
+                    throw new IllegalStateException("Vertex project missing. Set VERTEX_PROJECT or GOOGLE_CLOUD_PROJECT.");
+                }
+                return new GeminiVertexLlmClient(VERTEX_PROJECT, VERTEX_LOCATION, GEMINI_MODEL);
+            case "groq":
+            default:
+                return new GroqLlmClient(client, GROQ_API_KEY);
+        }
     }
 
     @Override
@@ -114,7 +165,7 @@ public class LlmAgent implements TestAgent {
         try {
             String jsonResponse;
             try {
-                jsonResponse = callGroqApi();
+                jsonResponse = callLlm();
             } catch (RuntimeException apiEx) {
                 // If the API rejects a tool-call style generation, attempt to recover using failed_generation.
                 String recovered = tryRecoverFailedGenerationJson(apiEx.getMessage());
@@ -163,79 +214,77 @@ public class LlmAgent implements TestAgent {
 
     // --- Private Helpers ---
 
-    private String callGroqApi() throws Exception {
-        if (API_KEY == null || API_KEY.isEmpty()) {
-            throw new IllegalStateException("GROQ_API_KEY environment variable is missing!");
+    private String callLlm() throws Exception {
+        JsonObject requestBody = new JsonObject();
+
+        // Keep OpenAI-chat compatible shape for Groq; Gemini client will adapt it.
+        String provider = llmClient.providerName();
+        if (provider.startsWith("groq")) {
+            requestBody.addProperty("model", GROQ_MODEL);
+        } else {
+            // Not used by Vertex SDK, but keep it for logging/debug.
+            requestBody.addProperty("model", GEMINI_MODEL);
         }
 
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", MODEL);
         requestBody.addProperty("temperature", 0.0);
 
-        // Create request messages as-is, but in logs only show a tail (last N)
         JsonArray messagesArray = new JsonArray();
         for (JsonObject m : messages) {
             messagesArray.add(m);
         }
         requestBody.add("messages", messagesArray);
 
+        // Groq supports response_format; Gemini will ignore.
         JsonObject responseFormat = new JsonObject();
         responseFormat.addProperty("type", "json_object");
         requestBody.add("response_format", responseFormat);
 
         String jsonBody = gson.toJson(requestBody);
 
-        if (LLM_WIRE_LOG_ENABLED) {
-            System.out.println("\n==================================================");
-            System.out.println("[LLM] REQUEST");
-            System.out.println("  url   : " + API_URL);
-            System.out.println("  model : " + MODEL);
-            System.out.println("  temp  : 0.0");
-            System.out.println("\n[LLM] MESSAGES (last " + LLM_MAX_MESSAGES_TO_LOG + "):");
-            logMessageTail();
-            System.out.println("\n[LLM] FULL REQUEST JSON:");
-            System.out.println(prettyGson.toJson(JsonParser.parseString(jsonBody)));
-            System.out.println("==================================================");
+        int promptTokensEst = 0;
+        if (LLM_USAGE_LOG_ENABLED) {
+            // Estimate tokens based on the exact request payload being sent.
+            promptTokensEst = TokenCounter.estimateTokens(jsonBody);
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + API_KEY)
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                .build();
+        long startNs = System.nanoTime();
+        String raw = llmClient.chatCompletions(jsonBody);
+        long latencyMs = (System.nanoTime() - startNs) / 1_000_000;
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (LLM_USAGE_LOG_ENABLED) {
+            int responseTokensEst = TokenCounter.estimateTokens(raw);
+            Path out = Paths.get(LLM_USAGE_LOG_FILE);
+            String model = requestBody.has("model") ? requestBody.get("model").getAsString() : null;
+            LlmUsageLogger.log(out, llmClient.providerName(), model, promptTokensEst, responseTokensEst, latencyMs);
+        }
 
         if (LLM_WIRE_LOG_ENABLED) {
             System.out.println("\n==================================================");
             System.out.println("[LLM] RESPONSE");
-            System.out.println("  status : " + response.statusCode());
+            System.out.println("  provider : " + llmClient.providerName());
             System.out.println("\n[LLM] RAW RESPONSE JSON:");
             try {
-                System.out.println(prettyGson.toJson(JsonParser.parseString(response.body())));
+                System.out.println(prettyGson.toJson(JsonParser.parseString(raw)));
             } catch (Exception ignore) {
-                System.out.println(response.body());
+                System.out.println(raw);
             }
             System.out.println("==================================================");
         }
 
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("API Error: " + response.statusCode() + " " + response.body());
-        }
-        return response.body();
+        return raw;
     }
 
     private Action parseLlmResponse(String jsonResponse) {
-        // Extract content from Groq response structure
         JsonObject root = JsonParser.parseString(jsonResponse).getAsJsonObject();
         JsonArray choices = root.getAsJsonArray("choices");
         String content = choices.get(0).getAsJsonObject()
                 .getAsJsonObject("message")
                 .get("content").getAsString();
 
-        // The model should return a JSON object, but some models return a JSON array of actions.
-        var parsed = JsonParser.parseString(content);
+        // Gemini (and some other providers) may wrap JSON in markdown fences.
+        String cleaned = extractJsonPayload(content);
+
+        var parsed = JsonParser.parseString(cleaned);
         JsonObject decision;
         if (parsed.isJsonArray()) {
             JsonArray arr = parsed.getAsJsonArray();
@@ -315,6 +364,53 @@ public class LlmAgent implements TestAgent {
         }
 
         return new Action(actionType, selector, value);
+    }
+
+    private static String extractJsonPayload(String content) {
+        if (content == null) {
+            return "{}";
+        }
+        String s = content.trim();
+
+        // Strip markdown fences if present
+        if (s.startsWith("```")) {
+            // Remove leading ```json or ```
+            int firstNewline = s.indexOf('\n');
+            if (firstNewline > 0) {
+                s = s.substring(firstNewline + 1);
+            }
+            // Remove trailing ```
+            int lastFence = s.lastIndexOf("```");
+            if (lastFence >= 0) {
+                s = s.substring(0, lastFence);
+            }
+            s = s.trim();
+        }
+
+        // Best-effort: extract the first JSON object/array substring.
+        int obj = s.indexOf('{');
+        int arr = s.indexOf('[');
+        int start;
+        if (obj < 0) {
+            start = arr;
+        } else if (arr < 0) {
+            start = obj;
+        } else {
+            start = Math.min(obj, arr);
+        }
+
+        if (start > 0) {
+            s = s.substring(start).trim();
+        }
+
+        // Trim any leading/trailing junk after the closing brace/bracket (common with chatty models)
+        int endObj = s.lastIndexOf('}');
+        int endArr = s.lastIndexOf(']');
+        int end = Math.max(endObj, endArr);
+        if (end >= 0 && end + 1 < s.length()) {
+            s = s.substring(0, end + 1).trim();
+        }
+        return s;
     }
 
     private void logMessageTail() {

@@ -20,124 +20,124 @@ public class Main {
 //                "\n"
 //        );
 
-        TestAgent agent = new LlmAgent(
-                "Verify Company Navigation and Financial Information – TEEJAY LANKA PLC (CSE Website)\n" +
-                        "Objective\n" +
-                        "\n" +
-                        "Validate that a user can search for TEEJAY LANKA PLC on the CSE.lk website, navigate to the correct company details page, and successfully view the General Information and Financials sections.\n" +
-                        "\n" +
-                        "Preconditions\n" +
-                        "\n" +
-                        "Web browser is available\n" +
-                        "\n" +
-                        "Internet connection is active\n" +
-                        "\n" +
-                        "Test Steps and Expected Results\n" +
-                        "\n" +
-                        "Navigate to CSE Website\n" +
-                        "\n" +
-                        "Action: Open a web browser and go to https://www.cse.lk\n" +
-                        "\n" +
-                        "Expected Result: CSE homepage loads successfully\n" +
-                        "\n" +
-                        "Verify Search Input Field\n" +
-                        "\n" +
-                        "Action: Locate the search input field on the homepage\n" +
-                        "\n" +
-                        "Expected Result: Search input field is visible and contains the placeholder text \"Search\"\n" +
-                        "\n" +
-                        "Search for Company\n" +
-                        "\n" +
-                        "Action: Enter \"TEEJAY LANKA PLC\" into the search input field\n" +
-                        "\n" +
-                        "Expected Result: Search suggestions or results are displayed\n" +
-                        "\n" +
-                        "Validate Search Results\n" +
-                        "\n" +
-                        "Action: Inspect the displayed search results\n" +
-                        "\n" +
-                        "Expected Result: At least one result contains \"TEEJAY LANKA PLC\" or the stock code \"TJL.N0000\"\n" +
-                        "\n" +
-                        "Select Company Result\n" +
-                        "\n" +
-                        "Action: Click on the search result labeled \"TEEJAY LANKA PLC\"\n" +
-                        "\n" +
-                        "Expected Result: User is navigated to the company details page\n" +
-                        "\n" +
-                        "Verify Company Details Page\n" +
-                        "\n" +
-                        "Action: Observe the page content after navigation\n" +
-                        "\n" +
-                        "Expected Result: The company name \"TEEJAY LANKA PLC\" is clearly visible on the page\n" +
-                        "\n" +
-                        "Locate General Information Section\n" +
-                        "\n" +
-                        "Action: Scroll down the page to the General Information section\n" +
-                        "\n" +
-                        "Expected Result: General Information section is visible and fully loaded\n" +
-                        "\n" +
-                        "Capture General Information Screenshot\n" +
-                        "\n" +
-                        "Action: Capture a screenshot of the General Information section\n" +
-                        "\n" +
-                        "Expected Result: Screenshot is successfully captured\n" +
-                        "\n" +
-                        "Locate Financials Section\n" +
-                        "\n" +
-                        "Action: Continue scrolling or locate the tab labeled \"Financials\" and click that tab there \n" +
-                        "\n" +
-                        "Expected Result: Financials tab/section is visible on the page\n" +
-                        "\n" +
-                        "Capture Financials Screenshot\n" +
-                        "\n" +
-                        "Action: Capture a screenshot of the Financials section or tab\n" +
-                        "\n" +
-                        "Expected Result: Screenshot is successfully captured"
-        );
-
 //        TestAgent agent = new LlmAgent(
-//                "Test Case: Verify Microsoft SSO Login and Bot Navigation – RPA Dashboard QA\n" +
+//                "Verify Company Navigation and Financial Information – TEEJAY LANKA PLC (CSE Website)\n" +
+//                        "Objective\n" +
 //                        "\n" +
-//                        "Objective:\n" +
-//                        "Validate that a user can access the RPA Dashboard QA environment, complete Microsoft SSO authentication, and navigate to a specific bot details page.\n" +
+//                        "Validate that a user can search for TEEJAY LANKA PLC on the CSE.lk website, navigate to the correct company details page, and successfully view the General Information and Financials sections.\n" +
 //                        "\n" +
-//                        "Preconditions:\n" +
-//                        "- Browser is available\n" +
-//                        "- Internet connection is active\n" +
+//                        "Preconditions\n" +
 //                        "\n" +
-//                        "Test Steps:\n" +
-//                        "1. Open a web browser and navigate to https://dashboard-qa.000-rpa-np.centralus.azr.sysco.net/\n" +
-//                        "   Expected: RPA Dashboard QA homepage loads successfully.\n" +
+//                        "Web browser is available\n" +
 //                        "\n" +
-//                        "2. Verify a version update popup is displayed.\n" +
-//                        "   Action: Click the button ( Xpath : //*[@id=\"root\"]/div/div[1]/div/div/div/p/a) which is visible on the popup alert .\n" +
-//                        "   Expected: Popup closes and application continues without errors.\n" +
+//                        "Internet connection is active\n" +
 //                        "\n" +
-//                        "3. Locate the 'Login' text button at the top-right corner of the page and click it.\n" +
-//                        "   Expected: User is redirected to Microsoft SSO authentication in a new popup window.\n" +
+//                        "Test Steps and Expected Results\n" +
 //                        "\n" +
-//                        "4. On the Microsoft SSO page which is a new popup page so you have to have navigate the tab, locate the input field with placeholder 'Email, phone, or Skype'.\n" +
-//                        "   Action: Enter 'Chiran.Govinnage@sysco.com' and click 'Next'.\n" +
+//                        "Navigate to CSE Website\n" +
 //                        "\n" +
-//                        "5. Locate the Enter your Sysco Network ID input field. \n" +
-//                        "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'cgov4385' and click 'Next' wait there few moment. There will not be any place holders there. just one input field\n" +
+//                        "Action: Open a web browser and go to https://www.cse.lk\n" +
+//                        "\n" +
+//                        "Expected Result: CSE homepage loads successfully\n" +
+//                        "\n" +
+//                        "Verify Search Input Field\n" +
+//                        "\n" +
+//                        "Action: Locate the search input field on the homepage\n" +
+//                        "\n" +
+//                        "Expected Result: Search input field is visible and contains the placeholder text \"Search\"\n" +
+//                        "\n" +
+//                        "Search for Company\n" +
+//                        "\n" +
+//                        "Action: Enter \"TEEJAY LANKA PLC\" into the search input field\n" +
+//                        "\n" +
+//                        "Expected Result: Search suggestions or results are displayed\n" +
+//                        "\n" +
+//                        "Validate Search Results\n" +
+//                        "\n" +
+//                        "Action: Inspect the displayed search results\n" +
+//                        "\n" +
+//                        "Expected Result: At least one result contains \"TEEJAY LANKA PLC\" or the stock code \"TJL.N0000\"\n" +
+//                        "\n" +
+//                        "Select Company Result\n" +
+//                        "\n" +
+//                        "Action: Click on the search result labeled \"TEEJAY LANKA PLC\"\n" +
+//                        "\n" +
+//                        "Expected Result: User is navigated to the company details page\n" +
+//                        "\n" +
+//                        "Verify Company Details Page\n" +
+//                        "\n" +
+//                        "Action: Observe the page content after navigation\n" +
+//                        "\n" +
+//                        "Expected Result: The company name \"TEEJAY LANKA PLC\" is clearly visible on the page\n" +
+//                        "\n" +
+//                        "Locate General Information Section\n" +
+//                        "\n" +
+//                        "Action: Scroll down the page to the General Information section\n" +
+//                        "\n" +
+//                        "Expected Result: General Information section is visible and fully loaded\n" +
+//                        "\n" +
+//                        "Capture General Information Screenshot\n" +
+//                        "\n" +
+//                        "Action: Capture a screenshot of the General Information section\n" +
+//                        "\n" +
+//                        "Expected Result: Screenshot is successfully captured\n" +
+//                        "\n" +
+//                        "Locate Financials Section\n" +
+//                        "\n" +
+//                        "Action: Continue scrolling or locate the tab labeled \"Financials\" and click that tab there \n" +
+//                        "\n" +
+//                        "Expected Result: Financials tab/section is visible on the page\n" +
+//                        "\n" +
+//                        "Capture Financials Screenshot\n" +
+//                        "\n" +
+//                        "Action: Capture a screenshot of the Financials section or tab\n" +
+//                        "\n" +
+//                        "Expected Result: Screenshot is successfully captured"
+//        );
+
+        TestAgent agent = new LlmAgent(
+                "Test Case: Verify Microsoft SSO Login and Bot Navigation – RPA Dashboard QA\n" +
+                        "\n" +
+                        "Objective:\n" +
+                        "Validate that a user can access the RPA Dashboard QA environment, complete Microsoft SSO authentication, and navigate to a specific bot details page.\n" +
+                        "\n" +
+                        "Preconditions:\n" +
+                        "- Browser is available\n" +
+                        "- Internet connection is active\n" +
+                        "\n" +
+                        "Test Steps:\n" +
+                        "1. Open a web browser and navigate to https://dashboard-qa.000-rpa-np.centralus.azr.sysco.net/\n" +
+                        "   Expected: RPA Dashboard QA homepage loads successfully.\n" +
+                        "\n" +
+                        "2. Verify a version update popup is displayed.\n" +
+                        "   Action: Click the button ( Xpath : //*[@id=\"root\"]/div/div[1]/div/div/div/p/a) which is visible on the popup alert .\n" +
+                        "   Expected: Popup closes and application continues without errors.\n" +
+                        "\n" +
+                        "3. Locate the 'Login' text button at the top-right corner of the page and click it.\n" +
+                        "   Expected: User is redirected to Microsoft SSO authentication in a new popup window.\n" +
+                        "\n" +
+                        "4. On the Microsoft SSO page which is a new popup page so you have to have navigate the tab, locate the input field with placeholder 'Email, phone, or Skype'.\n" +
+                        "   Action: Enter 'Chiran.Govinnage@sysco.com' and click 'Next'.\n" +
+                        "\n" +
+                        "5. Locate the Enter your Sysco Network ID input field. \n" +
+                        "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'cgov4385' and click 'Next' wait there few moment. There will not be any place holders there. just one input field\n" +
+                        "   Expected: Username is accepted without validation errors.\n" +
+                        "\n" +
+                        "6. Locate the password input field.\n" +
+                        "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'BscAI!2Data$2' and click the 'Sign in' button. There will not be any place holders there. just one input field\n" +
 //                        "   Expected: Username is accepted without validation errors.\n" +
 //                        "\n" +
 //                        "6. Locate the password input field.\n" +
-//                        "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'BscAI!2Data$2' and click the 'Sign in' button. There will not be any place holders there. just one input field\n" +
-////                        "   Expected: Username is accepted without validation errors.\n" +
-////                        "\n" +
-////                        "6. Locate the password input field.\n" +
-////                        "   Action: Enter 'BscAI!2Data$2' and click the 'Sign in' button.\n" +
-//                        "\n" +
-//                        "7. If a confirmation popup appears, click the 'Yes' button to complete authentication.\n" +
-//                        "Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, click the 'Yes' button. \n"+
-//                        "   Expected: Authentication completes successfully.\n" +
-//                        "\n" +
-//                        "8. Verify the user is redirected back to the RPA Dashboard QA environment.\n" +
-//                        "Action: if you see any pop up alert on there click it \n"+
-//                        "   Expected: User is logged in successfully.\n" +
-//                        "\n" +
+//                        "   Action: Enter 'BscAI!2Data$2' and click the 'Sign in' button.\n" +
+                        "\n" +
+                        "7. If a confirmation popup appears, click the 'Yes' button to complete authentication.\n" +
+                        "Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, click the 'Yes' button. \n"+
+                        "   Expected: Authentication completes successfully.\n" +
+                        "\n" +
+                        "8. Verify the user is redirected back to the RPA Dashboard QA environment.\n" +
+                        "Action: if you see any pop up alert on there click it \n"+
+                        "   Expected: User is logged in successfully.\n" +
+                        "\n" +
 //                        "9. Navigate to the Bots page.\n" +
 //                        "   Action: Click the 'Bots' link or Bots icon from the left-side navigation menu.\n" +
 //                        "   Expected: Bots page loads successfully.\n" +
@@ -151,7 +151,8 @@ public class Main {
 //                        "- RPA Dashboard QA loads without errors after authentication.\n" +
 //                        "- Bots page is accessible.\n" +
 //                        "- CECE bot details page is displayed correctly.\n"
-//        );
+                "\n"
+        );
 
 
 
