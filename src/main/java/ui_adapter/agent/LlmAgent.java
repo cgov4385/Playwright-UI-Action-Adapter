@@ -53,10 +53,13 @@ public class LlmAgent implements TestAgent {
     private boolean isComplete = false;
     private int consecutiveFailures = 0;
     private static final int MAX_CONSECUTIVE_FAILURES = 3;
-    private static final boolean LLM_WIRE_LOG_ENABLED = true;
+    private static final boolean LLM_WIRE_LOG_ENABLED = false;
     private static final int LLM_MAX_MESSAGES_TO_LOG = 6;
     private static final boolean LLM_USAGE_LOG_ENABLED = Boolean.parseBoolean(getConfig("LLM_USAGE_LOG_ENABLED", "true"));
     private static final String LLM_USAGE_LOG_FILE = getConfig("LLM_USAGE_LOG_FILE", "llm-usage.txt");
+
+    /** Only send the most recent execution messages to the LLM to reduce tokens. */
+    private static final int LLM_MAX_EXECUTION_MESSAGES_TO_SEND = Integer.parseInt(getConfig("LLM_MAX_EXECUTION_MESSAGES_TO_SEND", "10"));
 
     private static String getConfig(String key, String defaultVal) {
         String v = System.getenv(key);
@@ -228,8 +231,9 @@ public class LlmAgent implements TestAgent {
 
         requestBody.addProperty("temperature", 0.0);
 
+        // Build a trimmed message list: keep system + goal, plus only the last N execution messages.
         JsonArray messagesArray = new JsonArray();
-        for (JsonObject m : messages) {
+        for (JsonObject m : buildMessagesForRequest()) {
             messagesArray.add(m);
         }
         requestBody.add("messages", messagesArray);
@@ -272,6 +276,27 @@ public class LlmAgent implements TestAgent {
         }
 
         return raw;
+    }
+
+    private List<JsonObject> buildMessagesForRequest() {
+        // Expected layout in 'messages':
+        // [0]=system, [1]=goal(user), then alternating user ACTION_RESULT and assistant ACTION decisions
+        if (messages.size() <= 2) {
+            return messages;
+        }
+
+        int keepExecution = Math.max(0, LLM_MAX_EXECUTION_MESSAGES_TO_SEND);
+        int start = Math.max(2, messages.size() - keepExecution);
+
+        List<JsonObject> out = new ArrayList<>();
+        // Always include system + goal
+        out.add(messages.get(0));
+        out.add(messages.get(1));
+        // Include tail execution history
+        for (int i = start; i < messages.size(); i++) {
+            out.add(messages.get(i));
+        }
+        return out;
     }
 
     private Action parseLlmResponse(String jsonResponse) {
@@ -503,19 +528,19 @@ public class LlmAgent implements TestAgent {
                 "\n" +
                 "Output format:\n" +
                 "{\n" +
-                "  \"thought\": \"Brief reasoning about what to do next based on the last result\",\n" +
-                "  \"type\": \"NAVIGATE | CLICK | TYPE | WAIT_FOR_VISIBLE | ASSERT_VISIBLE | ASSERT_TEXT | SCREENSHOT | SCROLL | SWITCH_TAB\",\n" +
-                "  \"selector\": {\n" +
-                "    \"type\": \"CSS | XPATH | TEXT | ROLE | LABEL | PLACEHOLDER | TEST_ID\",\n" +
-                "    \"value\": \"selector value\",\n" +
-                "    \"meta\": {\n" +
-                "      \"role\": \"optional ARIA role like button, link, textbox, checkbox, etc.\",\n" +
-                "      \"nearText\": \"optional nearby or surrounding text to help disambiguate\",\n" +
-                "      \"description\": \"short natural-language description of the element if helpful\"\n" +
+                "  \\\"thought\\\": \\\"Brief reasoning about what to do next based on the last result\\\",\n" +
+                "  \\\"type\\\": \\\"NAVIGATE | CLICK | TYPE | WAIT_FOR_VISIBLE | ASSERT_VISIBLE | ASSERT_TEXT | SCREENSHOT | SCROLL | SWITCH_TAB | MAXIMIZE_WINDOW | CLICK_CHECKBOX | CLOSE_TAB\\\",\n" +
+                "  \\\"selector\\\": {\n" +
+                "    \\\"type\\\": \\\"CSS | XPATH | TEXT | ROLE | LABEL | PLACEHOLDER | TEST_ID\\\",\n" +
+                "    \\\"value\\\": \\\"selector value\\\",\n" +
+                "    \\\"meta\\\": {\n" +
+                "      \\\"role\\\": \\\"optional ARIA role like button, link, textbox, checkbox, etc.\\\",\n" +
+                "      \\\"nearText\\\": \\\"optional nearby or surrounding text to help disambiguate\\\",\n" +
+                "      \\\"description\\\": \\\"short natural-language description of the element if helpful\\\"\n" +
                 "    }\n" +
                 "  } (or null if not needed),\n" +
-                "  \"value\": \"text to type or url or scroll amount or tab index\" (or null),\n" +
-                "  \"isComplete\": boolean (true if goal achieved)\n" +
+                "  \\\"value\\\": \\\"text to type or url or scroll amount or tab index or viewport size (e.g. 1920,1080)\\\" (or null),\n" +
+                "  \\\"isComplete\\\": boolean (true if goal achieved)\n" +
                 "}\n" +
                 "\n" +
                 "Guidance on Selectors:\n" +
@@ -526,6 +551,9 @@ public class LlmAgent implements TestAgent {
                 "1. Always NAVIGATE first if history is empty.\n" +
                 "2. If a page load is expected, use WAIT_FOR_VISIBLE before interacting.\n" +
                 "3. If a popup or new tab opens (e.g., SSO), use SWITCH_TAB.\n" +
+                "4. Use MAXIMIZE_WINDOW early if the test wants full-screen.\n" +
+                "5. Use CLICK_CHECKBOX when the target is a checkbox/toggle that must be enabled (it is idempotent).\n" +
+                "6. Use CLOSE_TAB to close the current tab; optionally set value to a tab index to close.\n" +
                 "\n";
     }
 }

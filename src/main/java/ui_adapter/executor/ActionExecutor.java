@@ -5,6 +5,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.TimeoutError;
+import com.microsoft.playwright.options.ViewportSize;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import ui_adapter.driver.BrowserDriver;
 import ui_adapter.error.ErrorType;
@@ -34,7 +35,6 @@ public class ActionExecutor {
         Locator locator = null;
         try {
             Page page = driver.getPage();
-            // Selector might be null for actions like NAVIGATE (sometimes) or SCREENSHOT
             locator = selectorResolver.resolve(page, action.getSelector());
 
             switch (action.getType()) {
@@ -98,6 +98,58 @@ public class ActionExecutor {
                             return ActionResult.pass("Only one tab open. No switch performed.");
                         }
                     }
+
+                case MAXIMIZE_WINDOW:
+                    // Playwright Java doesn't provide true OS-level maximize; use a large viewport to fill most screens.
+                    // Use action.value as "width,height" optionally.
+                    int w = 1920;
+                    int h = 1080;
+                    try {
+                        if (action.getValue() != null && action.getValue().contains(",")) {
+                            String[] parts = action.getValue().split(",");
+                            w = Integer.parseInt(parts[0].trim());
+                            h = Integer.parseInt(parts[1].trim());
+                        }
+                    } catch (Exception ignore) {
+                        // keep defaults
+                    }
+                    page.setViewportSize(w, h);
+                    return ActionResult.pass("Viewport set to " + w + "x" + h);
+
+                case CLICK_CHECKBOX:
+                    // Ensure the checkbox is checked (safe to call multiple times).
+                    locator.check();
+                    return ActionResult.pass("Checked checkbox " + action.getSelector());
+
+                case CLOSE_TAB:
+                    // Close current tab by default. If value is an index, close that tab.
+                    Integer indexToClose = null;
+                    try {
+                        if (action.getValue() != null && !action.getValue().isBlank()) {
+                            indexToClose = Integer.parseInt(action.getValue().trim());
+                        }
+                    } catch (Exception ignore) {
+                        indexToClose = null;
+                    }
+
+                    java.util.List<Page> pagesBefore = driver.getAllPages();
+                    int currentIndex = pagesBefore.indexOf(page);
+                    int closeIndex = (indexToClose != null) ? indexToClose : currentIndex;
+                    if (closeIndex < 0 || closeIndex >= pagesBefore.size()) {
+                        return ActionResult.fail("Invalid tab index to close: " + closeIndex + ". Total tabs: " + pagesBefore.size(), ErrorType.UNKNOWN_ERROR, null);
+                    }
+
+                    Page toClose = pagesBefore.get(closeIndex);
+                    toClose.close();
+
+                    // Switch to a remaining tab if any
+                    java.util.List<Page> pagesAfter = driver.getAllPages();
+                    if (!pagesAfter.isEmpty()) {
+                        int newIndex = Math.min(closeIndex, pagesAfter.size() - 1);
+                        driver.switchToPage(newIndex);
+                    }
+
+                    return ActionResult.pass("Closed tab index " + closeIndex + " (tabs now: " + pagesAfter.size() + ")");
 
                 default:
                     return ActionResult.fail("Unsupported action type: " + action.getType(), ErrorType.UNKNOWN_ERROR, null);
