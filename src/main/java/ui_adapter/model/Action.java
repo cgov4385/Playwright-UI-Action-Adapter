@@ -10,7 +10,10 @@ public class Action {
         ASSERT_TEXT,
         SCREENSHOT,
         SCROLL,
-        SWITCH_TAB
+        SWITCH_TAB,
+        MAXIMIZE_WINDOW,
+        CLICK_CHECKBOX,
+        CLOSE_TAB
     }
 
     private final Type type;
