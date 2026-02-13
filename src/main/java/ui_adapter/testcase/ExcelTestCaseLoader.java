@@ -24,6 +24,7 @@ public class ExcelTestCaseLoader implements TestCaseLoader {
     private static final String COL_STATUS = "Status";
     private static final String COL_PRIORITY = "Priority";
     private static final String COL_STEP_SUMMARY = "Step Summary";
+    private static final String COL_TEST_STEP = "Test Step";  // Alternative name for Step Summary
     private static final String COL_TEST_DATA = "Test Data";
     private static final String COL_EXPECTED_RESULT = "Expected Result";
     private static final String COL_TESTCASE_TYPE = "TestCase Type";
@@ -60,6 +61,7 @@ public class ExcelTestCaseLoader implements TestCaseLoader {
             
             // Read data rows
             Map<String, TestCase> testCaseMap = new LinkedHashMap<>();
+            String lastIssueKey = null;
             
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -69,9 +71,16 @@ public class ExcelTestCaseLoader implements TestCaseLoader {
                 
                 String issueKey = getCellValue(row, columnMap.get(COL_ISSUE_KEY));
                 
-                // Skip if no issue key
+                // If issue key is empty, try to use the last seen issue key (continuation of test case)
                 if (issueKey == null || issueKey.trim().isEmpty()) {
-                    continue;
+                    if (lastIssueKey != null) {
+                        issueKey = lastIssueKey;
+                    } else {
+                        // Skip if no issue key and no previous issue key
+                        continue;
+                    }
+                } else {
+                    lastIssueKey = issueKey;
                 }
                 
                 // Get or create test case
@@ -92,12 +101,17 @@ public class ExcelTestCaseLoader implements TestCaseLoader {
                 }
                 
                 // Add test step if any step data exists
+                // Support both "Step Summary" and "Test Step" column names
                 String stepSummary = getCellValue(row, columnMap.get(COL_STEP_SUMMARY));
+                if (stepSummary == null || stepSummary.trim().isEmpty()) {
+                    stepSummary = getCellValue(row, columnMap.get(COL_TEST_STEP));
+                }
+                
                 String testData = getCellValue(row, columnMap.get(COL_TEST_DATA));
                 String expectedResult = getCellValue(row, columnMap.get(COL_EXPECTED_RESULT));
                 
+                // Add step if there's at least an action or expected result
                 if ((stepSummary != null && !stepSummary.trim().isEmpty()) ||
-                    (testData != null && !testData.trim().isEmpty()) ||
                     (expectedResult != null && !expectedResult.trim().isEmpty())) {
                     
                     TestStep testStep = new TestStep(stepSummary, testData, expectedResult);

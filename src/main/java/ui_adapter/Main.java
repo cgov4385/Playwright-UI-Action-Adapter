@@ -17,13 +17,11 @@ public class Main {
     public static void main(String[] args) {
         
         // ========================================================================
-        // EXAMPLE 1: Load test cases from Excel file and execute with LlmAgent
+        // Load test cases from Excel file and execute with LlmAgent
         // ========================================================================
-        // Uncomment below to load test cases from Excel
-        /*
         try {
             // Path to your Excel file
-            String excelFilePath = "path/to/your/testcases.xlsx";
+            String excelFilePath = "src/main/resources/test_cases_copy.xlsx";
             
             // Create loader
             TestCaseLoader loader = new ExcelTestCaseLoader(excelFilePath);
@@ -37,10 +35,15 @@ public class Main {
                 System.out.println("\n" + "=".repeat(80));
                 System.out.println("Executing Test Case: " + testCase.getKey());
                 System.out.println("Summary: " + testCase.getSummary());
+                System.out.println("Step Count: " + testCase.getTestSteps().size());
                 System.out.println("=".repeat(80) + "\n");
                 
                 // Convert test case to goal string and pass to LlmAgent
                 String goal = testCase.toGoalString();
+                System.out.println("Goal for LLM:");
+                System.out.println(goal);
+                System.out.println("\n" + "-".repeat(80) + "\n");
+                
                 executeTestWithAgent(goal);
             }
             
@@ -48,7 +51,6 @@ public class Main {
             System.err.println("Error loading test cases from Excel: " + e.getMessage());
             e.printStackTrace();
         }
-        */
         
         // ========================================================================
         // EXAMPLE 2: Load a specific test case by key
@@ -163,90 +165,65 @@ public class Main {
 //                        "Expected Result: Screenshot is successfully captured"
 //        );
 
-        TestAgent agent = new LlmAgent(
-                "Test Case: Verify Microsoft SSO Login and Bot Navigation – RPA Dashboard QA\n" +
-                        "\n" +
-                        "Objective:\n" +
-                        "Validate that a user can access the RPA Dashboard QA environment, complete Microsoft SSO authentication, and navigate to a specific bot details page.\n" +
-                        "\n" +
-                        "Preconditions:\n" +
-                        "- Browser is available\n" +
-                        "- Internet connection is active\n" +
-                        "\n" +
-                        "Test Steps:\n" +
-                        "1. Open a web browser and navigate to https://dashboard-qa.000-rpa-np.centralus.azr.sysco.net/\n" +
-                        "   Expected: RPA Dashboard QA homepage loads successfully.\n" +
-                        "\n" +
-                        "2. Verify a version update popup is displayed.\n" +
-                        "   Action: Click the button ( Xpath : //*[@id=\"root\"]/div/div[1]/div/div/div/p/a) which is visible on the popup alert .\n" +
-                        "   Expected: Popup closes and application continues without errors.\n" +
-                        "\n" +
-                        "3. Locate the 'Login' text button at the top-right corner of the page and click it.\n" +
-                        "   Expected: User is redirected to Microsoft SSO authentication in a new popup window.\n" +
-                        "\n" +
-                        "4. On the Microsoft SSO page which is a new popup page so you have to have navigate the tab, locate the input field with placeholder 'Email, phone, or Skype'.\n" +
-                        "   Action: Enter 'Chiran.Govinnage@sysco.com' and click 'Next'.\n" +
-                        "\n" +
-                        "5. Locate the Enter your Sysco Network ID input field. \n" +
-                        "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'cgov4385' and click 'Next' wait there few moment. There will not be any place holders there. just one input field\n" +
-                        "   Expected: Username is accepted without validation errors.\n" +
-                        "\n" +
-                        "6. Locate the password input field.\n" +
-                        "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'BscAI!2Data$27' and click the 'Sign in' button. There will not be any place holders there. just one input field\n" +
-                        "\n" +
-                        "7. If a confirmation popup appears, click the 'Yes' button to complete authentication.\n" +
-                        "Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, click the 'Yes' button. \n"+
-                        "   Expected: Authentication completes successfully.\n" +
-                        "\n" +
-                        "9. Close the second pop up screen still available in the screen. Otherviese it is ok\n" +
-                        "Action: check the avaialility of the the second pop up screen if it is then close that TAB\n"+
-                        "   Expected: there should be only one tab available now\n" +
-                        "\n" +
-                        "8. Verify the user is redirected back to the RPA Dashboard QA environment.\n" +
-                        "Action: if you see any pop up alert on there click it on the 'OK' button .And if you see it is still login button visible click it. \n"+
-                        "   Expected: User should successfully see the home page.\n" +
-                        "\n" +
-                        "9. Navigate to the Bots page.\n" +
-                        "   Action: Click the 'Bots' link or Bots icon from the left-side navigation menu.\n" +
-                        "   Expected: Bots page loads successfully.\n" +
-                        "\n" +
-                        "10. Locate the search input field with placeholder 'Search bot'.\n" +
-                        "    Action: Enter 'CECE' and select the result.\n" +
-                        "    Expected: CECE bot details page loads successfully.\n" +
-                        "\n" +
-                        "Overall Expected Result:\n" +
-                        "- User successfully logs in via Microsoft SSO.\n" +
-                        "- RPA Dashboard QA loads without errors after authentication.\n" +
-                        "- Bots page is accessible.\n" +
-                        "- CECE bot details page is displayed correctly.\n"+
-                "\n"
-        );
+        // TestAgent agent = new LlmAgent(
+        //         "Test Case: Verify Microsoft SSO Login and Bot Navigation – RPA Dashboard QA\n" +
+        //                 "\n" +
+        //                 "Objective:\n" +
+        //                 "Validate that a user can access the RPA Dashboard QA environment, complete Microsoft SSO authentication, and navigate to a specific bot details page.\n" +
+        //                 "\n" +
+        //                 "Preconditions:\n" +
+        //                 "- Browser is available\n" +
+        //                 "- Internet connection is active\n" +
+        //                 "\n" +
+        //                 "Test Steps:\n" +
+        //                 "1. Open a web browser and navigate to https://dashboard-qa.000-rpa-np.centralus.azr.sysco.net/\n" +
+        //                 "   Expected: RPA Dashboard QA homepage loads successfully.\n" +
+        //                 "\n" +
+        //                 "2. Verify a version update popup is displayed.\n" +
+        //                 "   Action: Click the button ( Xpath : //*[@id=\"root\"]/div/div[1]/div/div/div/p/a) which is visible on the popup alert .\n" +
+        //                 "   Expected: Popup closes and application continues without errors.\n" +
+        //                 "\n" +
+        //                 "3. Locate the 'Login' text button at the top-right corner of the page and click it.\n" +
+        //                 "   Expected: User is redirected to Microsoft SSO authentication in a new popup window.\n" +
+        //                 "\n" +
+        //                 "4. On the Microsoft SSO page which is a new popup page so you have to have navigate the tab, locate the input field with placeholder 'Email, phone, or Skype'.\n" +
+        //                 "   Action: Enter 'Chiran.Govinnage@sysco.com' and click 'Next'.\n" +
+        //                 "\n" +
+        //                 "5. Locate the Enter your Sysco Network ID input field. \n" +
+        //                 "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'cgov4385' and click 'Next' wait there few moment. There will not be any place holders there. just one input field\n" +
+        //                 "   Expected: Username is accepted without validation errors.\n" +
+        //                 "\n" +
+        //                 "6. Locate the password input field.\n" +
+        //                 "   Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, Enter 'BscAI!2Data$27' and click the 'Sign in' button. There will not be any place holders there. just one input field\n" +
+        //                 "\n" +
+        //                 "7. If a confirmation popup appears, click the 'Yes' button to complete authentication.\n" +
+        //                 "Action: On the Microsoft SSO page which is a new popup page so you have to have navigate that tab, click the 'Yes' button. \n"+
+        //                 "   Expected: Authentication completes successfully.\n" +
+        //                 "\n" +
+        //                 "9. Close the second pop up screen still available in the screen. Otherviese it is ok\n" +
+        //                 "Action: check the avaialility of the the second pop up screen if it is then close that TAB\n"+
+        //                 "   Expected: there should be only one tab available now\n" +
+        //                 "\n" +
+        //                 "8. Verify the user is redirected back to the RPA Dashboard QA environment.\n" +
+        //                 "Action: if you see any pop up alert on there click it on the 'OK' button .And if you see it is still login button visible click it. \n"+
+        //                 "   Expected: User should successfully see the home page.\n" +
+        //                 "\n" +
+        //                 "9. Navigate to the Bots page.\n" +
+        //                 "   Action: Click the 'Bots' link or Bots icon from the left-side navigation menu.\n" +
+        //                 "   Expected: Bots page loads successfully.\n" +
+        //                 "\n" +
+        //                 "10. Locate the search input field with placeholder 'Search bot'.\n" +
+        //                 "    Action: Enter 'CECE' and select the result.\n" +
+        //                 "    Expected: CECE bot details page loads successfully.\n" +
+        //                 "\n" +
+        //                 "Overall Expected Result:\n" +
+        //                 "- User successfully logs in via Microsoft SSO.\n" +
+        //                 "- RPA Dashboard QA loads without errors after authentication.\n" +
+        //                 "- Bots page is accessible.\n" +
+        //                 "- CECE bot details page is displayed correctly.\n"+
+        //         "\n"
+        // );
 
-
-
-        List<ActionResult> results = new ArrayList<>();
-        ActionResult lastResult = null;
-
-        try (UIActionAdapter adapter = new UIActionAdapter()) {
-            while (!agent.isTestComplete()) {
-                Action action = agent.nextAction(lastResult);
-                if (action == null) {
-                    break;
-                }
-
-                lastResult = adapter.execute(action);
-                results.add(lastResult);
-            }
-        }
-
-        agent.onTestEnd(results);
-
-        for (ActionResult r : results) {
-            System.out.printf("[%s] %s%n", r.getStatus(), r.getMessage());
-            if (r.getScreenshotPath() != null) {
-                System.out.println("  Screenshot: " + r.getScreenshotPath());
-            }
-        }
     }
     
     /**

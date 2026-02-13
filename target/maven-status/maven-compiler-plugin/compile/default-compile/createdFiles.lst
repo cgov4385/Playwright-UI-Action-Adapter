@@ -1,5 +1,6 @@
 ui_adapter\selector\SelectorResolver$1.class
 ui_adapter\executor\ActionExecutor.class
+ui_adapter\TestExcelLoader.class
 ui_adapter\model\Selector$Type.class
 ui_adapter\testcase\ExcelTestCaseLoader.class
 ui_adapter\agent\service\LlmClient.class
@@ -12,6 +13,7 @@ ui_adapter\agent\service\GeminiVertexLlmClient.class
 ui_adapter\model\ActionResult.class
 ui_adapter\model\TestRunResult.class
 ui_adapter\selector\SelectorResolver.class
+ui_adapter\WaitActionDemo.class
 ui_adapter\agent\service\TokenCounter.class
 ui_adapter\model\ActionResult$Status.class
 ui_adapter\error\ErrorType.class
