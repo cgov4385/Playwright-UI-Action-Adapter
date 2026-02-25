@@ -24,6 +24,7 @@ public class ActionExecutor {
     private final BrowserDriver driver;
     private final SelectorResolver selectorResolver;
     private boolean capturePageState = false;  // Enable page state capture for validation
+    private ActionLogger actionLogger;
 
     private static final int AMBIGUOUS_CANDIDATE_LIMIT = 5;
 
@@ -38,6 +39,14 @@ public class ActionExecutor {
      */
     public void setCapturePageState(boolean capture) {
         this.capturePageState = capture;
+    }
+
+    /**
+     * Set the action logger for this executor.
+     * @param logger The action logger to use
+     */
+    public void setActionLogger(ActionLogger logger) {
+        this.actionLogger = logger;
     }
 
     private String resolveValue(String value) {
@@ -65,7 +74,13 @@ public class ActionExecutor {
     }
 
     public ActionResult execute(Action action) {
+        // Log action start
+        if (actionLogger != null && actionLogger.isEnabled()) {
+            actionLogger.logActionStart(action);
+        }
+
         Locator locator = null;
+        ActionResult result = null;
         try {
             Page page = driver.getPage();
             locator = selectorResolver.resolve(page, action.getSelector());
@@ -78,12 +93,16 @@ public class ActionExecutor {
                     }
                     page.navigate(navUrl);
                     String pageStateNav = capturePageState ? captureCurrentPageState(page) : null;
-                    return ActionResult.pass("Navigated to " + action.getValue(), pageStateNav);
+                    result = ActionResult.pass("Navigated to " + action.getValue(), pageStateNav);
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case CLICK:
                     locator.click();
                     String pageStateClick = capturePageState ? captureCurrentPageState(page) : null;
-                    return ActionResult.pass("Clicked element " + action.getSelector(), pageStateClick);
+                    result = ActionResult.pass("Clicked element " + action.getSelector(), pageStateClick);
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case TYPE:
                     String textToType = resolveValue(action.getValue());
@@ -93,7 +112,9 @@ public class ActionExecutor {
                             ? "******" 
                             : action.getValue();
                     String pageStateType = capturePageState ? captureCurrentPageState(page) : null;
-                    return ActionResult.pass("Typed '" + displayedValue + "' into " + action.getSelector(), pageStateType);
+                    result = ActionResult.pass("Typed '" + displayedValue + "' into " + action.getSelector(), pageStateType);
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case WAIT:
                     // Static wait/sleep for specified seconds (default: 5 seconds)
@@ -112,53 +133,67 @@ public class ActionExecutor {
                     
                     Thread.sleep(waitSeconds * 1000L);
                     String pageStateWait = capturePageState ? captureCurrentPageState(page) : null;
-                    return ActionResult.pass("Waited for " + waitSeconds + " second(s)", pageStateWait);
+                    result = ActionResult.pass("Waited for " + waitSeconds + " second(s)", pageStateWait);
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case WAIT_FOR_VISIBLE:
                     locator.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
-                    return ActionResult.pass("Element " + action.getSelector() + " is visible");
+                    result = ActionResult.pass("Element " + action.getSelector() + " is visible");
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case ASSERT_VISIBLE:
                     assertThat(locator).isVisible();
-                    return ActionResult.pass("Assertion passed: Element " + action.getSelector() + " is visible");
+                    result = ActionResult.pass("Assertion passed: Element " + action.getSelector() + " is visible");
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case ASSERT_TEXT:
                     assertThat(locator).containsText(action.getValue());
-                    return ActionResult.pass("Assertion passed: Element " + action.getSelector() + " contains text '" + action.getValue() + "'");
+                    result = ActionResult.pass("Assertion passed: Element " + action.getSelector() + " contains text '" + action.getValue() + "'");
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case SCREENSHOT:
                     String path = "screenshot-" + UUID.randomUUID() + ".png";
                     page.screenshot(new Page.ScreenshotOptions().setPath(Paths.get(path)));
-                    return ActionResult.pass("Screenshot taken: " + path);
+                    result = ActionResult.pass("Screenshot taken: " + path);
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case SCROLL:
                     // If selector is present, scroll into view of that element
                     if (action.getSelector() != null) {
                         locator.scrollIntoViewIfNeeded();
-                        return ActionResult.pass("Scrolled element " + action.getSelector() + " into view");
+                        result = ActionResult.pass("Scrolled element " + action.getSelector() + " into view");
                     }
                     // Otherwise, generic scroll down (e.g., 500px)
                     else {
                         page.evalOnSelector("body", "body => window.scrollBy(0, 500)");
-                        return ActionResult.pass("Scrolled down 500px");
+                        result = ActionResult.pass("Scrolled down 500px");
                     }
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case SWITCH_TAB:
                     try {
                         // The 'value' field can hold the index (0, 1, 2)
                         int index = Integer.parseInt(action.getValue());
                         driver.switchToPage(index);
-                        return ActionResult.pass("Switched to tab index " + index);
+                        result = ActionResult.pass("Switched to tab index " + index);
                     } catch (NumberFormatException e) {
                         // Default to switching to the last opened tab (likely the popup) if no valid index is provided
                         java.util.List<Page> pages = driver.getAllPages();
                         if (pages.size() > 1) {
                             driver.switchToPage(pages.size() - 1);
-                            return ActionResult.pass("Switched to latest tab (total tabs: " + pages.size() + ")");
+                            result = ActionResult.pass("Switched to latest tab (total tabs: " + pages.size() + ")");
                         } else {
-                            return ActionResult.pass("Only one tab open. No switch performed.");
+                            result = ActionResult.pass("Only one tab open. No switch performed.");
                         }
                     }
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case MAXIMIZE_WINDOW:
                     // Playwright Java doesn't provide true OS-level maximize; use a large viewport to fill most screens.
@@ -175,12 +210,16 @@ public class ActionExecutor {
                         // keep defaults
                     }
                     page.setViewportSize(w, h);
-                    return ActionResult.pass("Viewport set to " + w + "x" + h);
+                    result = ActionResult.pass("Viewport set to " + w + "x" + h);
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case CLICK_CHECKBOX:
                     // Ensure the checkbox is checked (safe to call multiple times).
                     locator.check();
-                    return ActionResult.pass("Checked checkbox " + action.getSelector());
+                    result = ActionResult.pass("Checked checkbox " + action.getSelector());
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 case CLOSE_TAB:
                     // Close current tab by default. If value is an index, close that tab.
@@ -210,7 +249,9 @@ public class ActionExecutor {
                         driver.switchToPage(newIndex);
                     }
 
-                    return ActionResult.pass("Closed tab index " + closeIndex + " (tabs now: " + pagesAfter.size() + ")");
+                    result = ActionResult.pass("Closed tab index " + closeIndex + " (tabs now: " + pagesAfter.size() + ")");
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
 
                 default:
                     return ActionResult.fail("Unsupported action type: " + action.getType(), ErrorType.UNKNOWN_ERROR, null);
@@ -333,7 +374,12 @@ public class ActionExecutor {
             // If screenshot fails (e.g. browser closed), we still want to return the original error
             screenshotPath = "screenshot-failed";
         }
-        return ActionResult.fail(message + " | Cause: " + e.getMessage(), type, screenshotPath, pageState);
+        ActionResult result = ActionResult.fail(message + " | Cause: " + e.getMessage(), type, screenshotPath, pageState);
+        // Log failure if logger is available
+        if (actionLogger != null && actionLogger.isEnabled()) {
+            actionLogger.log("ACTION FAILED: " + message + " | Cause: " + e.getMessage());
+        }
+        return result;
     }
 
     /**

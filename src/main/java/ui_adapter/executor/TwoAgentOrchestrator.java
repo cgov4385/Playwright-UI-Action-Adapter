@@ -29,6 +29,7 @@ public class TwoAgentOrchestrator {
     private final List<ValidationResult> validationResults = new ArrayList<>();
     
     private boolean enableDetailedReporting = true;
+    private ActionLogger actionLogger;
     
     public TwoAgentOrchestrator(TestCase testCase) {
         this.testCase = testCase;
@@ -42,6 +43,15 @@ public class TwoAgentOrchestrator {
     
     public void setDetailedReporting(boolean enabled) {
         this.enableDetailedReporting = enabled;
+    }
+    
+    /**
+     * Set the action logger to track browser actions.
+     * @param logger The action logger to use
+     */
+    public void setActionLogger(ActionLogger logger) {
+        this.actionLogger = logger;
+        this.adapter.setActionLogger(logger);
     }
     
     /**

@@ -3,6 +3,7 @@ package ui_adapter.adapter;
 import ui_adapter.driver.BrowserDriver;
 import ui_adapter.driver.PlaywrightDriver;
 import ui_adapter.executor.ActionExecutor;
+import ui_adapter.executor.ActionLogger;
 import ui_adapter.model.Action;
 import ui_adapter.model.ActionResult;
 import ui_adapter.model.TestRunResult;
@@ -46,6 +47,14 @@ public class UIActionAdapter implements AutoCloseable {
     /** Enable/disable page state capture for validation. */
     public void setCapturePageState(boolean capture) {
         this.executor.setCapturePageState(capture);
+    }
+
+    /**
+     * Set the action logger for tracking browser actions.
+     * @param logger The action logger to use
+     */
+    public void setActionLogger(ActionLogger logger) {
+        this.executor.setActionLogger(logger);
     }
 
     /**

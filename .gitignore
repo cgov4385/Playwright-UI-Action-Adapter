@@ -33,3 +33,6 @@ bin/
 
 #screen shots
 ./screenshots/
+
+# Action logs (browser action tracking)
+action-logs/

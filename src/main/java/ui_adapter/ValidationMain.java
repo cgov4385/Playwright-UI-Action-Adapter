@@ -1,5 +1,6 @@
 package ui_adapter;
 
+import ui_adapter.executor.ActionLogger;
 import ui_adapter.executor.TwoAgentOrchestrator;
 import ui_adapter.model.TestCase;
 import ui_adapter.testcase.ExcelTestCaseLoader;
@@ -70,6 +71,10 @@ public class ValidationMain {
             // Track overall results
             List<TwoAgentOrchestrator.TwoAgentTestResult> allResults = new ArrayList<>();
             
+            // Create action logger for entire test suite
+            ActionLogger logger = new ActionLogger(true);
+            logger.log("Starting two-agent validation mode with " + testCases.size() + " test case(s)");
+            
             // Execute each test case with two-agent orchestrator
             for (int i = 0; i < testCases.size(); i++) {
                 TestCase testCase = testCases.get(i);
@@ -78,17 +83,23 @@ public class ValidationMain {
                 System.out.println("▓ TEST CASE " + (i + 1) + "/" + testCases.size());
                 System.out.println("▓".repeat(80));
                 
+                logger.logTestCaseStart(testCase.getKey() + " - " + testCase.getSummary());
+                
                 TwoAgentOrchestrator orchestrator = null;
                 try {
                     orchestrator = new TwoAgentOrchestrator(testCase);
                     orchestrator.setDetailedReporting(detailedReporting);
+                    orchestrator.setActionLogger(logger);
                     
                     TwoAgentOrchestrator.TwoAgentTestResult result = orchestrator.execute();
                     allResults.add(result);
                     
+                    logger.logTestCaseEnd(testCase.getKey(), result.isSuccess());
+                    
                 } catch (Exception e) {
                     System.err.println("ERROR executing test case " + testCase.getKey() + ": " + e.getMessage());
                     e.printStackTrace();
+                    logger.logTestCaseEnd(testCase.getKey(), false);
                 } finally {
                     if (orchestrator != null) {
                         orchestrator.close();
@@ -96,8 +107,15 @@ public class ValidationMain {
                 }
             }
             
+            logger.log("Two-agent validation mode completed");
+            logger.close();
+            
             // Print overall summary
             printOverallSummary(allResults);
+            
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("Action log saved to: " + logger.getLogFilePath());
+            System.out.println("=".repeat(80));
             
         } catch (IOException e) {
             System.err.println("Error loading test cases from Excel: " + e.getMessage());

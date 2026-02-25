@@ -3,6 +3,7 @@ package ui_adapter;
 import ui_adapter.adapter.UIActionAdapter;
 import ui_adapter.agent.LlmAgent;
 import ui_adapter.agent.TestAgent;
+import ui_adapter.executor.ActionLogger;
 import ui_adapter.model.Action;
 import ui_adapter.model.ActionResult;
 import ui_adapter.model.TestCase;
@@ -91,7 +92,14 @@ public class Main {
         List<ActionResult> results = new ArrayList<>();
         ActionResult lastResult = null;
 
+        // Create action logger
+        ActionLogger logger = new ActionLogger(true);
+        logger.log("Starting test execution with goal: " + goal);
+
         try (UIActionAdapter adapter = new UIActionAdapter()) {
+            // Enable action logging
+            adapter.setActionLogger(logger);
+
             while (!agent.isTestComplete()) {
                 Action action = agent.nextAction(lastResult);
                 if (action == null) {
@@ -104,6 +112,8 @@ public class Main {
         }
 
         agent.onTestEnd(results);
+        logger.log("Test execution completed");
+        logger.close();
 
         // Print results
         System.out.println("\nTest Execution Results:");
@@ -113,5 +123,6 @@ public class Main {
                 System.out.println("  Screenshot: " + r.getScreenshotPath());
             }
         }
+        System.out.println("\nAction log saved to: " + logger.getLogFilePath());
     }
 }
