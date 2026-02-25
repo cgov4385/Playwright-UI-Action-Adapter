@@ -34,6 +34,9 @@ public class Main {
         
         // ========================================================================
         // Load test cases from Excel file and execute with LlmAgent
+        // 
+        // NOTE: This uses single-agent mode (Action Agent only, no validation).
+        // For two-agent validation mode, use ValidationMain instead.
         // ========================================================================
         
         // Parse command line arguments

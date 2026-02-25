@@ -23,12 +23,21 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 public class ActionExecutor {
     private final BrowserDriver driver;
     private final SelectorResolver selectorResolver;
+    private boolean capturePageState = false;  // Enable page state capture for validation
 
     private static final int AMBIGUOUS_CANDIDATE_LIMIT = 5;
 
     public ActionExecutor(BrowserDriver driver, SelectorResolver selectorResolver) {
         this.driver = driver;
         this.selectorResolver = selectorResolver;
+    }
+
+    /**
+     * Enable or disable page state capture.
+     * When enabled, ActionResult will include page content for validation.
+     */
+    public void setCapturePageState(boolean capture) {
+        this.capturePageState = capture;
     }
 
     private String resolveValue(String value) {
@@ -68,11 +77,13 @@ public class ActionExecutor {
                         return ActionResult.fail("Navigation URL is missing", ErrorType.NAVIGATION_FAILED, null);
                     }
                     page.navigate(navUrl);
-                    return ActionResult.pass("Navigated to " + action.getValue());
+                    String pageStateNav = capturePageState ? captureCurrentPageState(page) : null;
+                    return ActionResult.pass("Navigated to " + action.getValue(), pageStateNav);
 
                 case CLICK:
                     locator.click();
-                    return ActionResult.pass("Clicked element " + action.getSelector());
+                    String pageStateClick = capturePageState ? captureCurrentPageState(page) : null;
+                    return ActionResult.pass("Clicked element " + action.getSelector(), pageStateClick);
 
                 case TYPE:
                     String textToType = resolveValue(action.getValue());
@@ -81,7 +92,8 @@ public class ActionExecutor {
                     String displayedValue = (action.getValue() != null && action.getValue().startsWith("ENV:")) 
                             ? "******" 
                             : action.getValue();
-                    return ActionResult.pass("Typed '" + displayedValue + "' into " + action.getSelector());
+                    String pageStateType = capturePageState ? captureCurrentPageState(page) : null;
+                    return ActionResult.pass("Typed '" + displayedValue + "' into " + action.getSelector(), pageStateType);
 
                 case WAIT:
                     // Static wait/sleep for specified seconds (default: 5 seconds)
@@ -99,7 +111,8 @@ public class ActionExecutor {
                     if (waitSeconds > 60) waitSeconds = 60;
                     
                     Thread.sleep(waitSeconds * 1000L);
-                    return ActionResult.pass("Waited for " + waitSeconds + " second(s)");
+                    String pageStateWait = capturePageState ? captureCurrentPageState(page) : null;
+                    return ActionResult.pass("Waited for " + waitSeconds + " second(s)", pageStateWait);
 
                 case WAIT_FOR_VISIBLE:
                     locator.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
@@ -304,16 +317,45 @@ public class ActionExecutor {
 
     private ActionResult handleFailure(Exception e, ErrorType type, String message) {
         String screenshotPath = null;
+        String pageState = null;
         try {
             // Attempt screenshot on failure
             screenshotPath = "screenshots/failure-" + UUID.randomUUID() + ".png";
             if (driver != null) {
-                driver.getPage().screenshot(new Page.ScreenshotOptions().setPath(Paths.get(screenshotPath)));
+                Page page = driver.getPage();
+                page.screenshot(new Page.ScreenshotOptions().setPath(Paths.get(screenshotPath)));
+                // Capture page state on failure for validation
+                if (capturePageState) {
+                    pageState = captureCurrentPageState(page);
+                }
             }
         } catch (Exception ignored) {
             // If screenshot fails (e.g. browser closed), we still want to return the original error
             screenshotPath = "screenshot-failed";
         }
-        return ActionResult.fail(message + " | Cause: " + e.getMessage(), type, screenshotPath);
+        return ActionResult.fail(message + " | Cause: " + e.getMessage(), type, screenshotPath, pageState);
+    }
+
+    /**
+     * Captures the current page state (text content) for validation purposes.
+     * Returns a summary of visible text to keep token usage reasonable.
+     */
+    private String captureCurrentPageState(Page page) {
+        try {
+            // Get page title and visible text content
+            String title = page.title();
+            String bodyText = page.locator("body").textContent();
+            
+            // Truncate if too long (keep first 3000 chars for validation)
+            int maxLength = 3000;
+            if (bodyText != null && bodyText.length() > maxLength) {
+                bodyText = bodyText.substring(0, maxLength) + "... [truncated]";
+            }
+            
+            return "Page Title: " + title + "\n" +
+                   "Page Content: " + bodyText;
+        } catch (Exception e) {
+            return "<Unable to capture page state: " + e.getMessage() + ">";
+        }
     }
 }

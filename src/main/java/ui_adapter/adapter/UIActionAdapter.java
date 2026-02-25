@@ -43,6 +43,11 @@ public class UIActionAdapter implements AutoCloseable {
         this.loggingEnabled = enabled;
     }
 
+    /** Enable/disable page state capture for validation. */
+    public void setCapturePageState(boolean capture) {
+        this.executor.setCapturePageState(capture);
+    }
+
     /**
      * Execute exactly one action and return its result.
      * No retries, no decision logic.
