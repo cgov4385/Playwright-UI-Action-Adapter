@@ -553,14 +553,18 @@ public class LlmAgent implements TestAgent {
                 "- Prefer semantic selectors (ROLE/LABEL/PLACEHOLDER/TEST_ID/TEXT). Avoid complex CSS/XPATH unless necessary.\n" +
                 "- If multiple elements match a TEXT selector, prefer the element that is a BUTTON or LINK.\n" +
                 "\n" +
+                "Handling Secrets:\n" +
+                "- NEVER output raw passwords or sensitive data in the JSON.\n" +
+                "- If a step requires a password/secret, use the format 'ENV:VARIABLE_NAME' in the 'value' field.\n" +
+                "- Example: { \"type\": \"TYPE\", \"selector\": { ... }, \"value\": \"ENV:MY_APP_PASSWORD\" }\n" +
+                "\n" +
                 "Step-by-step logic:\n" +
                 "1. Always NAVIGATE first if history is empty.\n" +
                 "2. If a page load is expected, use WAIT_FOR_VISIBLE before interacting.\n" +
                 "3. Use WAIT for static delays when the test requires waiting a few seconds (default: 5 seconds, or specify seconds in value field).\n" +
-                "4. If a popup or new tab opens (e.g., SSO), use SWITCH_TAB.\n" +
-                "5. Use MAXIMIZE_WINDOW early if the test wants full-screen.\n" +
-                "6. Use CLICK_CHECKBOX when the target is a checkbox/toggle that must be enabled (it is idempotent).\n" +
-                "7. Use CLOSE_TAB to close the current tab; optionally set value to a tab index to close.\n" +
+                "4. Use MAXIMIZE_WINDOW early if the test wants full-screen.\n" +
+                "5. Use CLICK_CHECKBOX when the target is a checkbox/toggle that must be enabled (it is idempotent).\n" +
+                // "6. Use CLOSE_TAB to close the current tab; optionally set value to a tab index to close.\n" +
                 "\n";
     }
 }

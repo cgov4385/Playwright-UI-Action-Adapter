@@ -3,15 +3,6 @@
   <component name="CopilotDiffPersistence">
     <option name="pendingDiffs">
       <map>
-        <entry key="$PROJECT_DIR$/.gitignore">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/.gitignore" />
-              <option name="originalContent" value="### IntelliJ IDEA ###&#10;out/&#10;!**/src/main/**/out/&#10;!**/src/test/**/out/&#10;&#10;### Eclipse ###&#10;.apt_generated&#10;.classpath&#10;.factorypath&#10;.project&#10;.settings&#10;.springBeans&#10;.sts4-cache&#10;bin/&#10;!**/src/main/**/bin/&#10;!**/src/test/**/bin/&#10;&#10;### NetBeans ###&#10;/nbproject/private/&#10;/nbbuild/&#10;/dist/&#10;/nbdist/&#10;/.nb-gradle/&#10;&#10;### VS Code ###&#10;.vscode/&#10;&#10;### Mac OS ###&#10;.DS_Store" />
-              <option name="updatedContent" value="### IntelliJ IDEA ###&#10;out/&#10;!**/src/main/**/out/&#10;!**/src/test/**/out/&#10;&#10;### Eclipse ###&#10;.apt_generated&#10;.classpath&#10;.factorypath&#10;.project&#10;.settings&#10;.springBeans&#10;.sts4-cache&#10;bin/&#10;!**/src/main/**/bin/&#10;!**/src/test/**/bin/&#10;&#10;### NetBeans ###&#10;/nbproject/private/&#10;/nbbuild/&#10;/dist/&#10;/nbdist/&#10;/.nb-gradle/&#10;&#10;### VS Code ###&#10;.vscode/&#10;&#10;### Mac OS ###&#10;.DS_Store&#10;&#10;# Environment Variables&#10;.env" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
         <entry key="$PROJECT_DIR$/src/Main.java">
           <value>
             <PendingDiffInfo>
@@ -111,15 +102,6 @@
               <option name="filePath" value="$PROJECT_DIR$/src/main/java/ui_adapter/error/ErrorType.java" />
               <option name="originalContent" value="package ui_adapter.error;&#10;&#10;public enum ErrorType {&#10;    TIMEOUT,&#10;    ELEMENT_NOT_FOUND,&#10;}&#10;&#10;&#10;&#10;&#10;" />
               <option name="updatedContent" value="package ui_adapter.error;&#13;&#10;&#13;&#10;public enum ErrorType {&#13;&#10;    TIMEOUT,&#13;&#10;    ELEMENT_NOT_FOUND,&#13;&#10;    AMBIGUOUS_SELECTOR,&#13;&#10;    ASSERTION_FAILED,&#13;&#10;    NAVIGATION_FAILED,&#13;&#10;    UNKNOWN_ERROR&#13;&#10;}" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/src/main/java/ui_adapter/model/Action.java">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/src/main/java/ui_adapter/model/Action.java" />
-              <option name="originalContent" value="package ui_adapter.model;&#10;&#10;public class Action {&#10;    public enum Type {&#10;        NAVIGATE,&#10;        CLICK,&#10;        TYPE,&#10;        WAIT_FOR_VISIBLE,&#10;        ASSERT_VISIBLE,&#10;        ASSERT_TEXT,&#10;        SCREENSHOT,&#10;        SCROLL&#10;&#10;    private final Type type;&#10;    private final Selector selector;&#10;    private final String value; // For TYPE, NAVIGATE (url), ASSERT_TEXT&#10;&#10;    public Action(Type type, Selector selector, String value) {&#10;        this.type = type;&#10;        this.selector = selector;&#10;        this.value = value;&#10;    }&#10;&#10;    public Type getType() {&#10;        return type;&#10;    }&#10;&#10;    public Selector getSelector() {&#10;        return selector;&#10;    }&#10;&#10;    public String getValue() {&#10;        return value;&#10;    }&#10;&#10;    @Override&#10;    public String toString() {&#10;        return &quot;Action{&quot; +&#10;                &quot;type=&quot; + type +&#10;                &quot;, selector=&quot; + selector +&#10;                &quot;, value='&quot; + value + '\'' +&#10;                '}';&#10;    }&#10;}&#10;" />
-              <option name="updatedContent" value="package ui_adapter.model;&#10;&#10;public class Action {&#10;    public enum Type {&#10;        NAVIGATE,&#10;        CLICK,&#10;        TYPE,&#10;        WAIT_FOR_VISIBLE,&#10;        ASSERT_VISIBLE,&#10;        ASSERT_TEXT,&#10;        SCREENSHOT,&#10;        SCROLL,&#10;        SWITCH_TAB,&#10;        MAXIMIZE_WINDOW,&#10;        CLICK_CHECKBOX,&#10;        CLOSE_TAB&#10;    }&#10;&#10;    private final Type type;&#10;    private final Selector selector;&#10;    private final String value; // For TYPE, NAVIGATE (url), ASSERT_TEXT&#10;&#10;    public Action(Type type, Selector selector, String value) {&#10;        this.type = type;&#10;        this.selector = selector;&#10;        this.value = value;&#10;    }&#10;&#10;    public Type getType() {&#10;        return type;&#10;    }&#10;&#10;    public Selector getSelector() {&#10;        return selector;&#10;    }&#10;&#10;    public String getValue() {&#10;        return value;&#10;    }&#10;&#10;    @Override&#10;    public String toString() {&#10;        return &quot;Action{&quot; +&#10;                &quot;type=&quot; + type +&#10;                &quot;, selector=&quot; + selector +&#10;                &quot;, value='&quot; + value + '\'' +&#10;                '}';&#10;    }&#10;}" />
             </PendingDiffInfo>
           </value>
         </entry>

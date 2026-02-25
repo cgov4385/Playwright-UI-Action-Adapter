@@ -30,3 +30,6 @@ bin/
 
 # Environment Variables
 .env
+
+#screen shots
+./screenshots/

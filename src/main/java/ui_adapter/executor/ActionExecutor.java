@@ -31,6 +31,30 @@ public class ActionExecutor {
         this.selectorResolver = selectorResolver;
     }
 
+    private String resolveValue(String value) {
+        if (value != null) {
+            String trimmed = value.trim();
+            if (trimmed.toUpperCase().startsWith("ENV:")) {
+                String envKey = trimmed.substring(4).trim();
+                String envVal = System.getenv(envKey);
+                if (envVal == null || envVal.isEmpty()) {
+                    // Fallback: System Property (loaded from application.properties in Main)
+                    envVal = System.getProperty(envKey);
+                }
+
+                if (envVal != null && !envVal.isEmpty()) {
+                    System.out.println("[SECRET] Resolved secret for key: " + envKey);
+                    return envVal;
+                }
+                
+                System.err.println("CRITICAL ERROR: Secret '" + envKey + "' not found in Environment or System Properties (application.properties).");
+                // Return empty string to prevent typing the placeholder into the UI
+                return ""; 
+            }
+        }
+        return value;
+    }
+
     public ActionResult execute(Action action) {
         Locator locator = null;
         try {
@@ -39,10 +63,11 @@ public class ActionExecutor {
 
             switch (action.getType()) {
                 case NAVIGATE:
-                    if (action.getValue() == null || action.getValue().isEmpty()) {
+                    String navUrl = resolveValue(action.getValue());
+                    if (navUrl == null || navUrl.isEmpty()) {
                         return ActionResult.fail("Navigation URL is missing", ErrorType.NAVIGATION_FAILED, null);
                     }
-                    page.navigate(action.getValue());
+                    page.navigate(navUrl);
                     return ActionResult.pass("Navigated to " + action.getValue());
 
                 case CLICK:
@@ -50,8 +75,13 @@ public class ActionExecutor {
                     return ActionResult.pass("Clicked element " + action.getSelector());
 
                 case TYPE:
-                    locator.fill(action.getValue());
-                    return ActionResult.pass("Typed '" + action.getValue() + "' into " + action.getSelector());
+                    String textToType = resolveValue(action.getValue());
+                    locator.fill(textToType);
+                    // Mask the value in the result if it was an ENV var to prevent leakage in logs/LLM history
+                    String displayedValue = (action.getValue() != null && action.getValue().startsWith("ENV:")) 
+                            ? "******" 
+                            : action.getValue();
+                    return ActionResult.pass("Typed '" + displayedValue + "' into " + action.getSelector());
 
                 case WAIT:
                     // Static wait/sleep for specified seconds (default: 5 seconds)
