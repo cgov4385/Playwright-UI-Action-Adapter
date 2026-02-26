@@ -49,6 +49,11 @@ public class ActionExecutor {
         this.actionLogger = logger;
     }
 
+    /**
+     * Resolves values with ENV: prefix from environment variables or application.properties.
+     * Format: ENV:VARIABLE_NAME
+     * Example: ENV:MY_SSO_PASSWORD will read MY_SSO_PASSWORD from env vars or application.properties
+     */
     private String resolveValue(String value) {
         if (value != null) {
             String trimmed = value.trim();

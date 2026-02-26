@@ -30,7 +30,7 @@ bin/
 
 # Environment Variables
 .env
-
+./src/main/resources/application.properties
 #screen shots
 ./screenshots/
 

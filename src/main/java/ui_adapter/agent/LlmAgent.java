@@ -556,7 +556,8 @@ public class LlmAgent implements TestAgent {
                 "Handling Secrets:\n" +
                 "- NEVER output raw passwords or sensitive data in the JSON.\n" +
                 "- If a step requires a password/secret, use the format 'ENV:VARIABLE_NAME' in the 'value' field.\n" +
-                "- Example: { \"type\": \"TYPE\", \"selector\": { ... }, \"value\": \"ENV:MY_APP_PASSWORD\" }\n" +
+                "- The system will read from environment variables OR application.properties file.\n" +
+                "- Example: { \"type\": \"TYPE\", \"selector\": { ... }, \"value\": \"ENV:MY_SSO_PASSWORD\" }\n" +
                 "\n" +
                 "Step-by-step logic:\n" +
                 "1. Always NAVIGATE first if history is empty.\n" +

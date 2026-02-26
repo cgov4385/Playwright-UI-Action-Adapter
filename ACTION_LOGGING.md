@@ -183,11 +183,11 @@ adapter.setActionLogger(logger);
 
 ### Sensitive Value Masking
 
-The logger automatically masks sensitive values that use the `ENV:` prefix:
+The logger automatically masks sensitive values that use the `ENV:` prefix. The system reads these values from environment variables OR from the `application.properties` file:
 
 **Action definition:**
 ```java
-Action action = new Action(Action.ActionType.TYPE, "#password", "ENV:MY_PASSWORD");
+Action action = new Action(Action.ActionType.TYPE, "#password", "ENV:MY_SSO_PASSWORD");
 ```
 
 **Logged output:**
@@ -204,6 +204,32 @@ Action action = new Action(Action.ActionType.TYPE, "#password", "ENV:MY_PASSWORD
 ```
 
 This ensures that secrets loaded from environment variables are never exposed in log files.
+
+## How ENV: Resolution Works
+
+When you use `ENV:MY_SSO_PASSWORD` in your test actions:
+
+1. **First Check**: System looks for `MY_SSO_PASSWORD` in **environment variables**
+2. **Second Check**: If not found in environment, system looks in **System Properties** (which includes `application.properties` loaded at startup)
+3. **Value Retrieved**: The actual password value (e.g., `BscAI!2Data$27`) is securely retrieved
+4. **Logging Protection**: Log files only show `ENV:******` to protect the secret
+
+**Example configuration in `application.properties`:**
+```properties
+MY_SSO_PASSWORD=BscAI!2Data$27
+MY_APP_PASSWORD=BscAI!2Data$27
+```
+
+**Example usage in test (LLM Agent will output this):**
+```json
+{
+  "type": "TYPE",
+  "selector": {"type": "CSS", "value": "#password"},
+  "value": "ENV:MY_SSO_PASSWORD"
+}
+```
+
+The system automatically resolves `ENV:MY_SSO_PASSWORD` to the actual value from `application.properties` and types it into the password field, while the logs only show masked output.
 
 ## ActionLogger API
 
