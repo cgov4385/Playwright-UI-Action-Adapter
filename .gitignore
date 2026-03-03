@@ -36,3 +36,7 @@ bin/
 
 # Action logs (browser action tracking)
 action-logs/
+
+# class and PNG files
+*.class
+*.png

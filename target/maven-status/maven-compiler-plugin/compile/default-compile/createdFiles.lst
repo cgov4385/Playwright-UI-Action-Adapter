@@ -4,13 +4,13 @@ ui_adapter\TestExcelLoader.class
 ui_adapter\model\Selector$Type.class
 ui_adapter\testcase\ExcelTestCaseLoader.class
 ui_adapter\agent\service\LlmClient.class
-ui_adapter\agent\LlmAgent.class
 ui_adapter\model\Action$Type.class
 ui_adapter\ValidationMain.class
 ui_adapter\Main.class
 ui_adapter\model\TestCase.class
 ui_adapter\model\Action.class
 ui_adapter\model\ValidationResult$Status.class
+ui_adapter\agent\ActionAgent.class
 ui_adapter\agent\service\GeminiVertexLlmClient.class
 ui_adapter\model\ActionResult.class
 ui_adapter\model\TestRunResult.class
