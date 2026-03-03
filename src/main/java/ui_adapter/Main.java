@@ -1,7 +1,7 @@
 package ui_adapter;
 
 import ui_adapter.adapter.UIActionAdapter;
-import ui_adapter.agent.LlmAgent;
+import ui_adapter.agent.ActionAgent;
 import ui_adapter.agent.TestAgent;
 import ui_adapter.executor.ActionLogger;
 import ui_adapter.model.Action;
@@ -34,10 +34,17 @@ public class Main {
         }
         
         // ========================================================================
-        // Load test cases from Excel file and execute with LlmAgent
+        // Load test cases from Excel file and execute with LlmAgent (Action Agent)
         // 
-        // NOTE: This uses single-agent mode (Action Agent only, no validation).
-        // For two-agent validation mode, use ValidationMain instead.
+        // NOTE: This uses SINGLE-AGENT mode:
+        //       - Only the Action Agent (LlmAgent) is used
+        //       - No intelligent validation of expected results
+        //       - Suitable for exploratory testing or simple automation
+        // 
+        // For TWO-AGENT mode with intelligent validation:
+        //       - Use ValidationMain instead
+        //       - Action Agent (LlmAgent) generates actions
+        //       - Validation Agent validates expected vs actual results
         // ========================================================================
         
         // Parse command line arguments
@@ -68,7 +75,7 @@ public class Main {
                 System.out.println("Step Count: " + testCase.getTestSteps().size());
                 System.out.println("=".repeat(80) + "\n");
                 
-                // Convert test case to goal string and pass to LlmAgent
+                // Convert test case to goal string and pass to ActionAgent
                 String goal = testCase.toGoalString();
                 System.out.println("Goal for LLM:");
                 System.out.println(goal);
@@ -88,7 +95,7 @@ public class Main {
      * @param goal The test goal string
      */
     private static void executeTestWithAgent(String goal) {
-        TestAgent agent = new LlmAgent(goal);
+        TestAgent agent = new ActionAgent(goal);
         List<ActionResult> results = new ArrayList<>();
         ActionResult lastResult = null;
 

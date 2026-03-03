@@ -18,7 +18,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Validation Agent - responsible for validating test step results.
+ * Validation Agent - Validates test results using LLM-powered fuzzy matching.
+ * 
+ * In the two-agent architecture:
+ * - This class is the VALIDATION AGENT that validates actual results against expectations
+ * - Works alongside LlmAgent (Action Agent) which generates UI actions
+ * 
+ * Responsibilities:
+ * - Fuzzy matching of natural language expectations vs actual outcomes
+ * - Confidence scoring (0.0 - 1.0) for validation results
+ * - Detailed reasoning about why validation passed or failed
  * 
  * This agent compares the actual outcome (from ActionResult) with the expected result
  * (from TestStep) and determines if they match. It uses LLM to intelligently interpret
@@ -27,6 +36,9 @@ import java.util.concurrent.Executors;
  * Architecture Role: This is the second agent in the two-agent system.
  * - Action Agent: Decides WHAT actions to perform
  * - Validation Agent: Decides IF the result matches expectations
+ * 
+ * @see ActionAgent (Action Agent - generates UI actions)
+ * @see TwoAgentOrchestrator for the orchestration of both agents
  */
 public class ValidationAgent {
 

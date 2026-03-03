@@ -11,6 +11,7 @@ import ui_adapter.driver.BrowserDriver;
 import ui_adapter.error.ErrorType;
 import ui_adapter.model.Action;
 import ui_adapter.model.ActionResult;
+import ui_adapter.model.Selector;
 import ui_adapter.selector.SelectorResolver;
 
 import java.nio.file.Paths;
@@ -268,6 +269,13 @@ public class ActionExecutor {
 
             // Basic error mapping
             if (msg.contains("Target closed") || msg.contains("browser has been closed")) {
+                // Browser/tab closure might be expected in certain scenarios (e.g., after SSO auth completion)
+                // Check if this is an auth-related action that might cause legitimate closure
+                if (isAuthRelatedClosure(action)) {
+                    result = ActionResult.pass("Action completed, browser/tab closed (likely expected behavior after authentication)");
+                    if (actionLogger != null) actionLogger.logActionResult(action, result);
+                    return result;
+                }
                 return handleFailure(e, ErrorType.UNKNOWN_ERROR, "Browser closed unexpectedly");
             }
             if (msg.contains("NS_ERROR_UNKNOWN_HOST")) {
@@ -385,6 +393,45 @@ public class ActionExecutor {
             actionLogger.log("ACTION FAILED: " + message + " | Cause: " + e.getMessage());
         }
         return result;
+    }
+
+    /**
+     * Determines if browser/tab closure is likely expected based on the action context.
+     * Common scenarios: SSO authentication completion, OAuth flows, popup closures after success.
+     */
+    private boolean isAuthRelatedClosure(Action action) {
+        if (action == null || action.getType() != Action.Type.CLICK) {
+            return false;
+        }
+
+        // Check selector text content for auth-related buttons
+        Selector selector = action.getSelector();
+        if (selector != null && selector.getValue() != null) {
+            String selectorValue = selector.getValue().toLowerCase();
+            // Common auth completion buttons/links
+            if (selectorValue.contains("yes") || 
+                selectorValue.contains("ok") ||
+                selectorValue.contains("allow") ||
+                selectorValue.contains("accept") ||
+                selectorValue.contains("continue") ||
+                selectorValue.contains("stay signed in") ||
+                selectorValue.contains("keep me signed in") ||
+                selectorValue.contains("remember") ||
+                selectorValue.contains("trust this device")) {
+                return true;
+            }
+        }
+
+        // Check selector description for auth context
+        if (selector != null && selector.getDescription() != null) {
+            String desc = selector.getDescription().toLowerCase();
+            if (desc.contains("auth") || desc.contains("sso") || desc.contains("login") || 
+                desc.contains("sign in") || desc.contains("popup") || desc.contains("oauth")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

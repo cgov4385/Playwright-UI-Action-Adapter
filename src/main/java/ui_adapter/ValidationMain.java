@@ -16,11 +16,25 @@ import java.util.Properties;
  * Main entry point for Two-Agent Validation Mode.
  * 
  * This uses the dual-agent architecture:
- * - Action Agent: Decides what UI actions to perform
- * - Validation Agent: Validates if results match expectations
+ * 
+ * 1. ACTION AGENT (LlmAgent)
+ *    - Decides what UI actions to perform (CLICK, TYPE, NAVIGATE, etc.)
+ *    - LLM-powered decision making based on test goals
+ * 
+ * 2. VALIDATION AGENT (ValidationAgent)
+ *    - Validates if actual results match expected results
+ *    - LLM-powered fuzzy matching with confidence scoring
+ * 
+ * The two agents work together:
+ *    Test Step → Action Agent generates action → Execute → Validation Agent validates result
  * 
  * Usage:
  *   java ui_adapter.ValidationMain --testcase path/to/test_cases.xlsx
+ *   java ui_adapter.ValidationMain --testcase test_cases.xlsx --brief
+ * 
+ * @see LlmAgent (Action Agent implementation)
+ * @see ValidationAgent (Validation Agent implementation)
+ * @see TwoAgentOrchestrator (Coordinates both agents)
  */
 public class ValidationMain {
     public static void main(String[] args) {

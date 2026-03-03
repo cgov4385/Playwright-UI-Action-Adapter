@@ -1,7 +1,7 @@
 package ui_adapter.executor;
 
 import ui_adapter.adapter.UIActionAdapter;
-import ui_adapter.agent.LlmAgent;
+import ui_adapter.agent.ActionAgent;
 import ui_adapter.agent.ValidationAgent;
 import ui_adapter.model.*;
 
@@ -11,17 +11,30 @@ import java.util.List;
 /**
  * Two-Agent Test Orchestrator
  * 
- * Coordinates the execution flow between:
- * 1. Action Agent (LlmAgent) - decides what actions to perform
- * 2. Validation Agent - validates if results match expectations
+ * Coordinates the execution flow between two specialized agents:
+ * 
+ * 1. ACTION AGENT (LlmAgent)
+ *    - Role: Decides what UI actions to perform (CLICK, TYPE, NAVIGATE, etc.)
+ *    - Implementation: LLM-powered decision making
+ *    - Input: Test goal, previous action results
+ *    - Output: Next action to execute
+ * 
+ * 2. VALIDATION AGENT (ValidationAgent)
+ *    - Role: Validates if actual results match expected results
+ *    - Implementation: LLM-powered fuzzy matching
+ *    - Input: Expected result, actual result, page state
+ *    - Output: Validation result (PASS/FAIL) with confidence score
  * 
  * This orchestrator implements the two-agent architecture pattern where
  * action execution and result validation are separate responsibilities.
+ * 
+ * @see LlmAgent (Action Agent implementation)
+ * @see ValidationAgent (Validation Agent implementation)
  */
 public class TwoAgentOrchestrator {
-    
-    private final LlmAgent actionAgent;
-    private final ValidationAgent validationAgent;
+
+    private final ActionAgent actionAgent;  // Action Agent: generates UI actions
+    private final ValidationAgent validationAgent;  // Validation Agent: validates results
     private final UIActionAdapter adapter;
     private final TestCase testCase;
     
@@ -33,7 +46,7 @@ public class TwoAgentOrchestrator {
     
     public TwoAgentOrchestrator(TestCase testCase) {
         this.testCase = testCase;
-        this.actionAgent = new LlmAgent(testCase.toGoalString());
+        this.actionAgent = new ActionAgent(testCase.toGoalString());
         this.validationAgent = new ValidationAgent();
         this.adapter = new UIActionAdapter();
         

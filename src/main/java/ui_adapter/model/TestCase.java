@@ -117,7 +117,7 @@ public class TestCase {
     }
 
     /**
-     * Converts the test case into a formatted goal string suitable for LlmAgent.
+     * Converts the test case into a formatted goal string suitable for ActionAgent.
      * @return A formatted string containing all test case information
      */
     public String toGoalString() {

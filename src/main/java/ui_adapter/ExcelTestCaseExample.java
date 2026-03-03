@@ -1,7 +1,7 @@
 package ui_adapter;
 
 import ui_adapter.adapter.UIActionAdapter;
-import ui_adapter.agent.LlmAgent;
+import ui_adapter.agent.ActionAgent;
 import ui_adapter.agent.TestAgent;
 import ui_adapter.model.Action;
 import ui_adapter.model.ActionResult;
@@ -143,10 +143,10 @@ public class ExcelTestCaseExample {
     }
 
     /**
-     * Helper method to execute a test with the LlmAgent
+     * Helper method to execute a test with the ActionAgent
      */
     private static void executeTestWithAgent(String goal) {
-        TestAgent agent = new LlmAgent(goal);
+        TestAgent agent = new ActionAgent(goal);
         List<ActionResult> results = new ArrayList<>();
         ActionResult lastResult = null;
 

@@ -3,6 +3,7 @@ package ui_adapter.agent;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import ui_adapter.model.Action;
@@ -23,12 +24,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * An agent that uses the Groq API (OpenAI compatible) to decide the next action.
- * <p>
- * It sends the conversation history (system prompt + previous results) to the LLM
- * and expects a JSON response corresponding to a deterministic UI Action.
+ * Action Agent - Uses LLM to decide the next UI action.
+ * 
+ * In the two-agent architecture:
+ * - This class is the ACTION AGENT that generates UI actions (CLICK, TYPE, NAVIGATE, etc.)
+ * - Works alongside ValidationAgent which validates results against expectations
+ * 
+ * Implementation:
+ * - Uses Groq API or Google Gemini Vertex AI for LLM inference
+ * - Sends conversation history (system prompt + previous results) to the LLM
+ * - Expects a JSON response corresponding to a deterministic UI Action
+ * 
+ * @see ValidationAgent for the companion validation agent
+ * @see TwoAgentOrchestrator for the orchestration of both agents
  */
-public class LlmAgent implements TestAgent {
+public class ActionAgent implements TestAgent {
 
     // Provider selection: groq | gemini-vertex
     private static final String LLM_PROVIDER = getConfig("LLM_PROVIDER", "gemini-vertex");
@@ -87,7 +97,7 @@ public class LlmAgent implements TestAgent {
         return key;
     }
 
-    public LlmAgent(String goal) {
+    public ActionAgent(String goal) {
         this.goal = goal;
         this.gson = new Gson();
 
@@ -164,41 +174,69 @@ public class LlmAgent implements TestAgent {
             }
         }
 
-        // 4. Call LLM to get the NEXT action
-        try {
-            String jsonResponse;
+        // 4. Call LLM to get the NEXT action (with retry for empty responses)
+        int emptyResponseRetries = 0;
+        int maxEmptyRetries = 2;
+        
+        while (emptyResponseRetries <= maxEmptyRetries) {
             try {
-                jsonResponse = callLlm();
-            } catch (RuntimeException apiEx) {
-                // If the API rejects a tool-call style generation, attempt to recover using failed_generation.
-                String recovered = tryRecoverFailedGenerationJson(apiEx.getMessage());
-                if (recovered != null) {
-                    jsonResponse = recovered;
-                } else {
-                    throw apiEx;
+                String jsonResponse;
+                try {
+                    jsonResponse = callLlm();
+                } catch (RuntimeException apiEx) {
+                    // If the API rejects a tool-call style generation, attempt to recover using failed_generation.
+                    String recovered = tryRecoverFailedGenerationJson(apiEx.getMessage());
+                    if (recovered != null) {
+                        jsonResponse = recovered;
+                    } else {
+                        throw apiEx;
+                    }
                 }
+
+                Action action = parseLlmResponse(jsonResponse);
+
+                // Add the assistant's decision to history
+                JsonObject assistantMessage = new JsonObject();
+                assistantMessage.addProperty("role", "assistant");
+                assistantMessage.addProperty("content", gson.toJson(action));
+                messages.add(assistantMessage);
+
+                if (LLM_WIRE_LOG_ENABLED) {
+                    System.out.println("[LLM] NEXT ACTION => " + summarizeAction(action));
+                }
+
+                return action;
+
+            } catch (IllegalArgumentException e) {
+                // Check if it's an empty response error
+                if (e.getMessage() != null && e.getMessage().contains("empty")) {
+                    emptyResponseRetries++;
+                    if (emptyResponseRetries <= maxEmptyRetries) {
+                        System.err.println("[LLM] Empty response detected (attempt " + emptyResponseRetries + "/" + maxEmptyRetries + "). Retrying with reminder...");
+                        
+                        // Add a reminder message to prompt the LLM
+                        JsonObject reminderMessage = new JsonObject();
+                        reminderMessage.addProperty("role", "user");
+                        reminderMessage.addProperty("content", "IMPORTANT: You must continue executing the test case. Provide the next action as JSON. Do not return empty responses. Review the test steps and execute the next one.");
+                        messages.add(reminderMessage);
+                        
+                        continue; // Retry
+                    }
+                }
+                // If not empty response or max retries exceeded, throw
+                throw e;
+            } catch (Exception e) {
+                // Don't print null; include class for easier debugging
+                System.err.println("[LLM] ERROR: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+                isComplete = true;
+                return null;
             }
-
-            Action action = parseLlmResponse(jsonResponse);
-
-            // Add the assistant's decision to history
-            JsonObject assistantMessage = new JsonObject();
-            assistantMessage.addProperty("role", "assistant");
-            assistantMessage.addProperty("content", gson.toJson(action));
-            messages.add(assistantMessage);
-
-            if (LLM_WIRE_LOG_ENABLED) {
-                System.out.println("[LLM] NEXT ACTION => " + summarizeAction(action));
-            }
-
-            return action;
-
-        } catch (Exception e) {
-            // Don't print null; include class for easier debugging
-            System.err.println("[LLM] ERROR: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
-            isComplete = true;
-            return null;
         }
+        
+        // If we get here, we've exhausted retries
+        System.err.println("[LLM] Failed to get valid response after " + maxEmptyRetries + " retries. Stopping test.");
+        isComplete = true;
+        return null;
     }
 
     @Override
@@ -302,9 +340,19 @@ public class LlmAgent implements TestAgent {
     private Action parseLlmResponse(String jsonResponse) {
         JsonObject root = JsonParser.parseString(jsonResponse).getAsJsonObject();
         JsonArray choices = root.getAsJsonArray("choices");
-        String content = choices.get(0).getAsJsonObject()
+        JsonElement contentElement = choices.get(0).getAsJsonObject()
                 .getAsJsonObject("message")
-                .get("content").getAsString();
+                .get("content");
+        
+        // Handle empty or null content
+        if (contentElement == null || contentElement.isJsonNull()) {
+            throw new IllegalArgumentException("LLM returned empty response. The agent must continue executing test steps.");
+        }
+        
+        String content = contentElement.getAsString();
+        if (content == null || content.trim().isEmpty()) {
+            throw new IllegalArgumentException("LLM returned empty content. The agent must provide the next action to execute.");
+        }
 
         // Gemini (and some other providers) may wrap JSON in markdown fences.
         String cleaned = extractJsonPayload(content);
@@ -518,8 +566,22 @@ public class LlmAgent implements TestAgent {
     }
 
     private String getSystemPrompt() {
-        return "You are a UI Test Automation Agent. Your goal is to navigate a website and perform actions to achieve a user goal.\n" +
+        return "You are a UI Test Automation Agent. Your goal is to execute test cases EXACTLY as specified.\n" +
                 "You must output STRICT JSON ONLY. No markdown, no explanations outside the JSON.\n" +
+                "\n" +
+                "⚠️ CRITICAL: NEVER return empty responses. ALWAYS provide a valid JSON action.\n" +
+                "\n" +
+                "CRITICAL TEST EXECUTION RULES:\n" +
+                "1. Follow the test steps EXACTLY as written - do NOT guess or improvise\n" +
+                "2. Execute ALL steps in the test case sequentially\n" +
+                "3. Your MAIN GOAL is to COMPLETE THE ENTIRE TEST CASE\n" +
+                "4. ONLY mark isComplete=true when:\n" +
+                "   a) You see 'test ended' or 'test complete' in the test case, OR\n" +
+                "   b) You have completed ALL steps listed in the test case\n" +
+                "5. Do NOT stop early - continue until all steps are done\n" +
+                "6. If a step fails, report it but continue to next step unless failure prevents continuation\n" +
+                "7. NEVER return empty or null responses - always provide the next action\n" +
+                "\n" +
                 "IMPORTANT: Output exactly ONE action JSON object (not an array).\n" +
                 "IMPORTANT: Do NOT output tool/function-call wrappers like {\\\"name\\\":..., \\\"arguments\\\":...}.\n" +
                 "IMPORTANT: The 'type' field MUST be one of the allowed action types listed below.\n" +
@@ -540,7 +602,7 @@ public class LlmAgent implements TestAgent {
                 "    }\n" +
                 "  } (or null if not needed),\n" +
                 "  \\\"value\\\": \\\"text to type or url or scroll amount or tab index or viewport size (e.g. 1920,1080)\\\" (or null),\n" +
-                "  \\\"isComplete\\\": boolean (true if goal achieved)\n" +
+                "  \\\"isComplete\\\": boolean (true ONLY when test case says 'test ended' or all steps are completed)\n" +
                 "}\n" +
                 "\n" +
                 "Action Details:\n" +
@@ -569,6 +631,13 @@ public class LlmAgent implements TestAgent {
                 "- Selector priority: PLACEHOLDER > LABEL > TEST_ID > ROLE > TEXT > CSS > XPATH\n" +
                 "- If multiple elements match, use meta.nearText or meta.description to disambiguate\n" +
                 "\n" +
+                "Authentication Flows & Browser Closure:\n" +
+                "- After SSO/OAuth authentication, clicking buttons like 'Yes', 'OK', 'Allow', 'Accept' may close the browser/popup\n" +
+                "- This is EXPECTED behavior and indicates successful authentication\n" +
+                "- If browser closes after auth-related clicks, consider the action SUCCESSFUL\n" +
+                "- DO NOT restart the test if browser closes after: 'Yes', 'OK', 'Stay signed in', 'Trust this device', etc.\n" +
+                "- After auth completion, mark isComplete=true to end the test gracefully\n" +
+                "\n" +
                 "Handling Secrets:\n" +
                 "- NEVER output raw passwords or sensitive data in the JSON.\n" +
                 "- If a step requires a password/secret, use the format 'ENV:VARIABLE_NAME' in the 'value' field.\n" +
@@ -576,12 +645,16 @@ public class LlmAgent implements TestAgent {
                 "- Example: { \"type\": \"TYPE\", \"selector\": { ... }, \"value\": \"ENV:MY_SSO_PASSWORD\" }\n" +
                 "\n" +
                 "Step-by-step logic:\n" +
-                "1. Always NAVIGATE first if history is empty.\n" +
-                "2. If a page load is expected, use WAIT_FOR_VISIBLE before interacting.\n" +
-                "3. Use WAIT for static delays when the test requires waiting a few seconds (default: 5 seconds, or specify seconds in value field).\n" +
-                "4. Use MAXIMIZE_WINDOW early if the test wants full-screen.\n" +
-                "5. Use CLICK_CHECKBOX when the target is a checkbox/toggle that must be enabled (it is idempotent).\n" +
-                // "6. Use CLOSE_TAB to close the current tab; optionally set value to a tab index to close.\n" +
+                "1. Read the GOAL carefully - it contains ALL test steps to execute\n" +
+                "2. Execute each step EXACTLY as written - no interpretation, no guessing\n" +
+                "3. Track which step you are on and ensure you complete ALL of them\n" +
+                "4. Always NAVIGATE first if history is empty.\n" +
+                "5. If a page load is expected, use WAIT_FOR_VISIBLE before interacting.\n" +
+                "6. Use WAIT for static delays when the test requires waiting a few seconds (default: 5 seconds, or specify seconds in value field).\n" +
+                "7. Use MAXIMIZE_WINDOW early if the test wants full-screen.\n" +
+                "8. Use CLICK_CHECKBOX when the target is a checkbox/toggle that must be enabled (it is idempotent).\n" +
+                "9. ONLY set isComplete=true when you see 'test ended' in the test case OR you have executed ALL steps\n" +
+                "10. Your PRIMARY OBJECTIVE is to complete the ENTIRE test case\n" +
                 "\n";
     }
 }
