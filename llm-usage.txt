@@ -1366,3 +1366,17 @@
 2026-02-26 19:07:50.985 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=3.11K tokens (3106) | response=71 tokens | total=3.18K tokens (3177) | latency=1793ms
 2026-02-26 19:07:56.233 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.83K tokens (2828) | response=150 tokens | total=2.98K tokens (2978) | latency=5230ms
 2026-02-26 19:08:00.135 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.56K tokens (2560) | response=138 tokens | total=2.70K tokens (2698) | latency=3875ms
+2026-03-03 15:46:39.204 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.05K tokens (2048) | response=75 tokens | total=2.12K tokens (2123) | latency=3960ms
+2026-03-03 15:46:49.539 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.15K tokens (2146) | response=116 tokens | total=2.26K tokens (2262) | latency=2033ms
+2026-03-03 15:46:51.847 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.28K tokens (2282) | response=47 tokens | total=2.33K tokens (2329) | latency=1148ms
+2026-03-03 15:46:57.270 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.41K tokens (2405) | response=131 tokens | total=2.54K tokens (2536) | latency=2326ms
+2026-03-03 15:46:58.851 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.48K tokens (2477) | response=45 tokens | total=2.52K tokens (2522) | latency=1564ms
+2026-03-03 15:47:10.305 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.61K tokens (2606) | response=28 tokens | total=2.63K tokens (2634) | latency=1884ms
+2026-03-03 15:47:13.073 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.61K tokens (2605) | response=50 tokens | total=2.66K tokens (2655) | latency=2703ms
+2026-03-03 15:47:45.779 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.84K tokens (2843) | response=134 tokens | total=2.98K tokens (2977) | latency=2598ms
+2026-03-03 15:47:47.008 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.87K tokens (2871) | response=38 tokens | total=2.91K tokens (2909) | latency=1201ms
+2026-03-03 15:47:48.904 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.90K tokens (2897) | response=119 tokens | total=3.02K tokens (3016) | latency=1457ms
+2026-03-03 15:47:51.412 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.89K tokens (2891) | response=116 tokens | total=3.01K tokens (3007) | latency=1697ms
+2026-03-03 15:47:57.522 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.89K tokens (2889) | response=119 tokens | total=3.01K tokens (3008) | latency=6094ms
+2026-03-03 15:47:59.124 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.80K tokens (2797) | response=128 tokens | total=2.93K tokens (2925) | latency=1593ms
+2026-03-03 15:48:00.678 | provider=gemini-vertex | model=gemini-2.5-flash | prompt=2.93K tokens (2927) | response=71 tokens | total=3.00K tokens (2998) | latency=1547ms

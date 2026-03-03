@@ -6,8 +6,6 @@ This document provides a detailed, step-by-step implementation guide for convert
 
 ---
 
-<!-- accoring to this file (Detailed Python Conversion Implementation Prompt ,Python Conversion Guide:  )
-new directory to python-code-base -->
 
 ## Phase 1: Project Initialization
 
